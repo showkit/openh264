@@ -1,3 +1,11 @@
+
+instructions for pulling new openH264 updates:
+========
+git remote add upstream https://github.com/cisco/openh264.git 
+git fetch upstream
+git merge upstream/master
+git push origin master
+
 OpenH264
 ========
 OpenH264 is a codec library which supports H.264 encoding and decoding. It is suitable for use in real time applications such as WebRTC. See http://www.openh264.org/ for more details.

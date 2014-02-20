@@ -1,0 +1,1 @@
+make ENABLE64BIT=No USE_ASM=Yes

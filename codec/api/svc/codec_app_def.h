@@ -167,14 +167,9 @@ typedef struct {
   int	iVideoWidth;		// video size in cx specified for a layer
   int	iVideoHeight;		// video size in cy specified for a layer
   float	fFrameRate;		// frame rate specified for a layer
-  int	iQualityLayerNum;	// layer number at quality level
   int	iSpatialBitrate;	// target bitrate for a spatial layer
-  int	iCgsSnrRefined;	// 0: SNR layers all MGS; 1: SNR layers all CGS
-  int	iInterSpatialLayerPredFlag;	// 0: diabled [independency spatial layer coding]; 1: enabled [base spatial layer dependency coding]
-
-  unsigned int	uiProfileIdc;			// value of profile IDC (0 for auto-detection)
+  unsigned int	uiProfileIdc;	// value of profile IDC (0 for auto-detection)
   int    iDLayerQp;
-  int	 iQualityBitrate[MAX_QUALITY_LAYER_NUM];	// target bitrate for a quality layer
 
   SSliceConfig sSliceCfg;
 } SSpatialLayerConfig;
@@ -196,7 +191,7 @@ typedef struct TagEncParamBase{
 
 typedef struct TagEncParamExt
 {
-  int       iUsageType;	//enable_screen_content_signal;// 0: //camera video signal; 1: screen content signal;
+  int       iUsageType;	//application type;// 0: //camera video signal; 1: screen content signal;
   int		iInputCsp;	// color space of input sequence
 
   int		iPicWidth;			// width of picture in samples
@@ -207,47 +202,46 @@ typedef struct TagEncParamExt
 
   int		iTemporalLayerNum;	// layer number at temporal level
   int		iSpatialLayerNum;	// layer number at spatial level
+  SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM];
 
   unsigned int		uiIntraPeriod;		// period of Intra frame
+  int		        iNumRefFrame;		// number of reference frame used
+  unsigned int	    uiFrameToBeCoded;	// frame to be encoded (at input frame rate)
   bool    bEnableSpsPpsIdAddition;
   bool    bPrefixNalAddingCtrl;
-  bool    bEnableDenoise;	    // denoise control
-  bool    bEnableBackgroundDetection;// background detection control //VAA_BACKGROUND_DETECTION //BGD cmd
-  bool    bEnableAdaptiveQuant; // adaptive quantization control
+  bool	  bEnableSSEI;
+  int      iPaddingFlag;            // 0:disable padding;1:padding
+  int      iEtropyCodingModeFlag;
+
+  /* rc control */
+  bool    bEnableRc;
   bool    bEnableFrameSkip; // allow skipping frames to keep the bitrate within limits
-  bool	bEnableCropPic;	// enable cropping source picture.  8/25/2010
-  // false: Streaming Video Sharing; true: Video Conferencing Meeting;
+  int     iMaxQp;
+  int     iMinQp;
 
+  /*LTR settings*/
   bool     bEnableLongTermReference; // 0: on, 1: off
+  int	   iLTRRefNum;
   int      iLtrMarkPeriod;
-  int   iPaddingFlag;            // 0:disable padding;1:padding
-  int   iEtropyCodingModeFlag;
 
-  SSpatialLayerConfig sSpatialLayers[MAX_SPATIAL_LAYER_NUM];
-  int		    iNumRefFrame;		// number of reference frame used
-  unsigned int	uiFrameToBeCoded;	// frame to be encoded (at input frame rate)
-  bool   bEnableRc;
+  /* multi-thread settings*/
   short		iMultipleThreadIdc;		// 1	# 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; > 1: count number of threads;
   short		iCountThreadsNum;			//		# derived from disable_multiple_slice_idc (=0 or >1) means;
 
-  int		iLTRRefNum;
-  bool		bEnableSSEI;
-  bool		bEnableFrameCroppingFlag;// enable frame cropping flag: TRUE always in application
-
-  /* Deblocking loop filter */
+   /* Deblocking loop filter */
   int		iLoopFilterDisableIdc;	// 0: on, 1: off, 2: on except for slice boundaries
   int		iLoopFilterAlphaC0Offset;// AlphaOffset: valid range [-6, 6], default 0
-
   int		iLoopFilterBetaOffset;	// BetaOffset:	valid range [-6, 6], default 0
   int		iInterLayerLoopFilterDisableIdc; // Employed based upon inter-layer, same comment as above
   int		iInterLayerLoopFilterAlphaC0Offset;	// InterLayerLoopFilterAlphaC0Offset
   int		iInterLayerLoopFilterBetaOffset;	// InterLayerLoopFilterBetaOffset
-  bool      bEnableSceneChangeDetect;
 
-  //added
-  int iMaxQp;
-  int iMinQp;
-
+  /*pre-processing feature*/
+  bool    bEnableDenoise;	    // denoise control
+  bool    bEnableBackgroundDetection;// background detection control //VAA_BACKGROUND_DETECTION //BGD cmd
+  bool    bEnableAdaptiveQuant; // adaptive quantization control
+  bool	  bEnableFrameCroppingFlag;// enable frame cropping flag: TRUE always in application
+  bool    bEnableSceneChangeDetect;
 }SEncParamExt;
 
 //Define a new struct to show the property of video bitstream.
@@ -292,6 +286,7 @@ typedef struct {
   int		iLayerNum;
   SLayerBSInfo	sLayerInfo[MAX_LAYER_NUM_OF_FRAME];
 
+  int eOutputFrameType;
 } SFrameBSInfo, *PFrameBSInfo;
 
 typedef struct Source_Picture_s {

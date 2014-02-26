@@ -279,14 +279,11 @@ int CWelsH264SVCEncoder::Initialize2 (SWelsSvcCodingParam* pCfg) {
   while (i < sEncodingParam.iSpatialLayerNum) {
     SSpatialLayerConfig* spatial_cfg = &sEncodingParam.sSpatialLayers[i];
     WelsLog (m_pEncContext, WELS_LOG_INFO,
-             "coding_param->sSpatialLayers[%d]: .iVideoWidth= %d; .iVideoHeight= %d; .fFrameRate= %.6ff; .iQualityLayerNum= %d; .iSpatialBitrate= %d; .iCgsSnrRefined= %d; .iInterSpatialLayerPredFlag= %d; .sSliceCfg.uiSliceMode= %d; .sSliceCfg.sSliceArgument.uiSliceNum= %d; .sSliceCfg.sSliceArgument.uiSliceSizeConstraint= %d;\n",
+             "coding_param->sSpatialLayers[%d]: .iVideoWidth= %d; .iVideoHeight= %d; .fFrameRate= %.6ff; .iSpatialBitrate= %d; .sSliceCfg.uiSliceMode= %d; .sSliceCfg.sSliceArgument.uiSliceNum= %d; .sSliceCfg.sSliceArgument.uiSliceSizeConstraint= %d;\n",
              i, spatial_cfg->iVideoWidth,
              spatial_cfg->iVideoHeight,
              spatial_cfg->fFrameRate,
-             spatial_cfg->iQualityLayerNum,
              spatial_cfg->iSpatialBitrate,
-             spatial_cfg->iCgsSnrRefined,
-             spatial_cfg->iInterSpatialLayerPredFlag,
              spatial_cfg->sSliceCfg.uiSliceMode,
              spatial_cfg->sSliceCfg.sSliceArgument.uiSliceNum,
              spatial_cfg->sSliceCfg.sSliceArgument.uiSliceSizeConstraint
@@ -498,16 +495,13 @@ int32_t CWelsH264SVCEncoder::RawData2SrcPic (const uint8_t* pSrc) {
 /*
  *	SVC core encoding
  */
-int CWelsH264SVCEncoder::EncodeFrame (const unsigned char* pSrc, SFrameBSInfo* pBsInfo) {
-  if (! (pSrc && m_pEncContext && m_bInitialFlag)) {
+int CWelsH264SVCEncoder::EncodeFrame (const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) {
+  if (! (kpSrcPic && m_pEncContext && m_bInitialFlag)) {
     return videoFrameTypeInvalid;
   }
 
   int32_t uiFrameType = videoFrameTypeInvalid;
-
-  if (RawData2SrcPic ((uint8_t*)pSrc) == 0) {
-    uiFrameType = EncodeFrame2 (const_cast<const SSourcePicture**> (m_pSrcPicList), 1, pBsInfo);
-  }
+  uiFrameType = EncodeFrame2 (&kpSrcPic, 1, pBsInfo);
 
 #ifdef REC_FRAME_COUNT
   ++ m_uiCountFrameNum;
@@ -524,22 +518,32 @@ int CWelsH264SVCEncoder::EncodeFrame (const unsigned char* pSrc, SFrameBSInfo* p
 
 
 int CWelsH264SVCEncoder::EncodeFrame2 (const SSourcePicture**   pSrcPicList, int nSrcPicNum, SFrameBSInfo* pBsInfo) {
-  if (! (pSrcPicList && m_pEncContext && m_bInitialFlag)) {
+  if (!(pSrcPicList && m_pEncContext && m_bInitialFlag) || (nSrcPicNum<=0) ){
     return videoFrameTypeInvalid;
   }
 
   int32_t iFrameTypeReturned = 0;
   int32_t iFrameType = videoFrameTypeInvalid;
+  XMMREG_PROTECT_STORE(CWelsH264SVCEncoder);
+  const int32_t kiEncoderReturn = WelsEncoderEncodeExt (m_pEncContext, pBsInfo, pSrcPicList, nSrcPicNum);
+  XMMREG_PROTECT_LOAD(CWelsH264SVCEncoder);
 
-  if (nSrcPicNum > 0) {
-    XMMREG_PROTECT_STORE(CWelsH264SVCEncoder);
-    iFrameTypeReturned = WelsEncoderEncodeExt (m_pEncContext, pBsInfo, pSrcPicList, nSrcPicNum);
-    XMMREG_PROTECT_LOAD(CWelsH264SVCEncoder);
-  } else {
-    assert (0);
+  switch (kiEncoderReturn) {
+  case ENC_RETURN_MEMALLOCERR:
+    WelsUninitEncoderExt (&m_pEncContext);
+    return videoFrameTypeInvalid;
+  case ENC_RETURN_SUCCESS:
+  case ENC_RETURN_CORRECTED:
+    break;//continue processing
+  case ENC_RETURN_UNSUPPORTED_PARA:
+  case ENC_RETURN_UNEXPECTED:
+    return videoFrameTypeInvalid;
+  default:
+    WelsLog (m_pEncContext, WELS_LOG_ERROR, "unexpected return(%d) from WelsEncoderEncodeExt()!\n", kiEncoderReturn);
     return videoFrameTypeInvalid;
   }
 
+  iFrameTypeReturned = pBsInfo->eOutputFrameType;
   switch (iFrameTypeReturned) {
   case WELS_FRAME_TYPE_P:
     iFrameType	= videoFrameTypeP;
@@ -621,14 +625,15 @@ int CWelsH264SVCEncoder::EncodeParameterSets (SFrameBSInfo* pBsInfo) {
 /*
  * return: 0 - success; otherwise - failed;
  */
-int CWelsH264SVCEncoder::PauseFrame (const unsigned char* kpSrc, SFrameBSInfo* pBsInfo) {
+int CWelsH264SVCEncoder::PauseFrame (const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) {
   int32_t  iReturn = 1;
 
   ForceIntraFrame (true);
 
-  if (EncodeFrame (kpSrc, pBsInfo) != videoFrameTypeInvalid) {
-    iReturn = 0;
+  if (EncodeFrame2 (&kpSrcPic, 1,pBsInfo) != videoFrameTypeInvalid) {
+	iReturn = 0;
   }
+ 
 
   // to avoid pause frame bitstream and
   // normal bitstream use different video channel.
@@ -740,7 +745,7 @@ int CWelsH264SVCEncoder::SetOption (ENCODER_OPTION eOptionId, void* pOption) {
     WelsLog (m_pEncContext, WELS_LOG_INFO, "ENCODER_OPTION_SVC_ENCODE_PARAM_EXT, sEncodingParam.iInputCsp= 0x%x\n",
              sEncodingParam.iInputCsp);
     WelsLog (m_pEncContext, WELS_LOG_INFO,
-             "coding_param->iPicWidth= %d;coding_param->iPicHeight= %d;coding_param->iTargetBitrate= %d;coding_param->iRCMode= %d;coding_param->iPaddingFlag= %d;coding_param->iTemporalLayerNum= %d;coding_param->iSpatialLayerNum= %d;coding_param->fFrameRate= %.6ff;coding_param->iInputCsp= %d;coding_param->uiIntraPeriod= %d;coding_param->bEnableSpsPpsIdAddition = %d;coding_param->bPrefixNalAddingCtrl = %d;coding_param->bEnableDenoise= %d;coding_param->bEnableBackgroundDetection= %d;coding_param->bEnableAdaptiveQuant= %d;coding_param->bEnableAdaptiveQuant= %d;coding_param->bEnableCropPic= %d;coding_param->bEnableLongTermReference= %d;coding_param->iLtrMarkPeriod= %d;\n",
+             "coding_param->iPicWidth= %d;coding_param->iPicHeight= %d;coding_param->iTargetBitrate= %d;coding_param->iRCMode= %d;coding_param->iPaddingFlag= %d;coding_param->iTemporalLayerNum= %d;coding_param->iSpatialLayerNum= %d;coding_param->fFrameRate= %.6ff;coding_param->iInputCsp= %d;coding_param->uiIntraPeriod= %d;coding_param->bEnableSpsPpsIdAddition = %d;coding_param->bPrefixNalAddingCtrl = %d;coding_param->bEnableDenoise= %d;coding_param->bEnableBackgroundDetection= %d;coding_param->bEnableAdaptiveQuant= %d;coding_param->bEnableAdaptiveQuant= %d;coding_param->bEnableLongTermReference= %d;coding_param->iLtrMarkPeriod= %d;\n",
              sEncodingParam.iPicWidth,
              sEncodingParam.iPicHeight,
              sEncodingParam.iTargetBitrate,
@@ -757,21 +762,17 @@ int CWelsH264SVCEncoder::SetOption (ENCODER_OPTION eOptionId, void* pOption) {
              sEncodingParam.bEnableBackgroundDetection,
              sEncodingParam.bEnableAdaptiveQuant,
              sEncodingParam.bEnableFrameSkip,
-             sEncodingParam.bEnableCropPic,
              sEncodingParam.bEnableLongTermReference,
              sEncodingParam.iLtrMarkPeriod);
     int32_t i = 0;
     while (i < sEncodingParam.iSpatialLayerNum) {
       SSpatialLayerConfig* pSpatialCfg = &sEncodingParam.sSpatialLayers[i];
       WelsLog (m_pEncContext, WELS_LOG_INFO,
-               "coding_param->sSpatialLayers[%d]: .iVideoWidth= %d; .iVideoHeight= %d; .fFrameRate= %.6ff; .iQualityLayerNum= %d; .iSpatialBitrate= %d; .iCgsSnrRefined= %d; .iInterSpatialLayerPredFlag= %d; .sSliceCfg.uiSliceMode= %d; .sSliceCfg.sSliceArgument.iSliceNum= %d; .sSliceCfg.sSliceArgument.uiSliceSizeConstraint= %d;\n",
+               "coding_param->sSpatialLayers[%d]: .iVideoWidth= %d; .iVideoHeight= %d; .fFrameRate= %.6ff; .iSpatialBitrate= %d; .sSliceCfg.uiSliceMode= %d; .sSliceCfg.sSliceArgument.iSliceNum= %d; .sSliceCfg.sSliceArgument.uiSliceSizeConstraint= %d;\n",
                i, pSpatialCfg->iVideoWidth,
                pSpatialCfg->iVideoHeight,
                pSpatialCfg->fFrameRate,
-               pSpatialCfg->iQualityLayerNum,
                pSpatialCfg->iSpatialBitrate,
-               pSpatialCfg->iCgsSnrRefined,
-               pSpatialCfg->iInterSpatialLayerPredFlag,
                pSpatialCfg->sSliceCfg.uiSliceMode,
                pSpatialCfg->sSliceCfg.sSliceArgument.uiSliceNum,
                pSpatialCfg->sSliceCfg.sSliceArgument.uiSliceSizeConstraint
@@ -834,7 +835,7 @@ int CWelsH264SVCEncoder::SetOption (ENCODER_OPTION eOptionId, void* pOption) {
       return cmInitParaError;
     }
     //adjust to valid range
-    m_pEncContext->pSvcParam->fMaxFrameRate	= WELS_CLIP3 (iValue, MIN_FRAME_RATE, MAX_FRAME_RATE);
+    m_pEncContext->pSvcParam->fMaxFrameRate = WELS_CLIP3 (iValue, MIN_FRAME_RATE, MAX_FRAME_RATE);
     WelsEncoderApplyFrameRate (m_pEncContext->pSvcParam);
   }
   break;

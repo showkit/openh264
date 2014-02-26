@@ -45,19 +45,14 @@
 #include "encoder_context.h"
 #include "utils.h"
 
-#ifdef NO_DYNAMIC_VP
-EResult WELSAPI CreateVpInterface (void** ppCtx, int iVersion);
-EResult WELSAPI DestroyVpInterface (void** ppCtx, int iVersion);
-#endif
-
 namespace WelsSVCEnc {
 
 #define WelsSafeDelete(p) if(p){ delete (p); (p) = NULL; }
 
 
 //***** entry API declaration ************************************************************************//
-typedef EResult (WELSAPI* pfnCreateVpInterface) (void**, int);
-typedef EResult (WELSAPI* pfnDestroyVpInterface) (void*, int);
+typedef EResult (* pfnCreateVpInterface) (void**, int);
+typedef EResult (* pfnDestroyVpInterface) (void*, int);
 
 int32_t WelsInitScaledPic (SWelsSvcCodingParam* pParam,  Scaled_Picture*  pScaledPic, CMemoryAlign* pMemoryAlign);
 bool  JudgeNeedOfScaling (SWelsSvcCodingParam* pParam, Scaled_Picture* pScaledPic);
@@ -405,6 +400,7 @@ int32_t CWelsPreProcess::UpdateSpatialPictures(sWelsEncCtx* pCtx, SWelsSvcCoding
     const int8_t iCurTid, const int32_t d_idx) {
   if (iCurTid < m_uiSpatialLayersInTemporal[d_idx] - 1 || pParam->iDecompStages == 0){
     if ((iCurTid >= MAX_TEMPORAL_LEVEL) || (m_uiSpatialLayersInTemporal[d_idx] - 1 > MAX_TEMPORAL_LEVEL)) {
+      InitLastSpatialPictures(pCtx);
       return 1;
     }
     if (pParam->bEnableLongTermReference && pCtx->bLongTermRefFlag[d_idx][iCurTid]) {

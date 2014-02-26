@@ -1,7 +1,8 @@
 include build/platform-x86-common.mk
 ASM = nasm
 SHAREDLIBSUFFIX = dylib
-CFLAGS += -Wno-deprecated-declarations -Werror -fPIC -DMACOS -DMT_ENABLED -MMD -MP
+SHARED = -dynamiclib
+CFLAGS += -Werror -fPIC -DMACOS -DMT_ENABLED -MMD -MP
 LDFLAGS += -lpthread
 ASMFLAGS += --prefix _ -DNOPREFIX
 ifeq ($(ENABLE64BIT), Yes)

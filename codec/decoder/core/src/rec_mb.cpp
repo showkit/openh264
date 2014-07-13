@@ -93,7 +93,7 @@ int32_t RecI4x4Luma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLe
 
     pGetI4x4LumaPredFunc[uiMode] (pPredI4x4, iLumaStride);
 
-    if (pDqLayer->pNzc[iMBXY][g_kuiMbNonZeroCountIdx[i]]) {
+    if (pDqLayer->pNzc[iMBXY][g_kuiMbCountScan4Idx[i]]) {
       int16_t* pRSI4x4 = &pRS[i << 4];
       pIdctResAddPredFunc (pPredI4x4, iLumaStride, pRSI4x4);
     }
@@ -104,7 +104,7 @@ int32_t RecI4x4Luma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLe
 
 
 int32_t RecI4x4Chroma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLevel, PDqLayer pDqLayer) {
-  int32_t iChromaStride = pCtx->pCurDqLayer->iCsStride[1];
+  int32_t iChromaStride = pCtx->pCurDqLayer->pDec->iLinesize[1];
 
   int8_t iChromaPredMode = pDqLayer->pChromaPredMode[iMBXY];
 
@@ -128,7 +128,7 @@ int32_t RecI16x16Mb (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLe
   int8_t iChromaPredMode = pDqLayer->pChromaPredMode[iMBXY];
   PGetIntraPredFunc* pGetIChromaPredFunc = pCtx->pGetIChromaPredFunc;
   PGetIntraPredFunc* pGetI16x16LumaPredFunc = pCtx->pGetI16x16LumaPredFunc;
-  int32_t iUVStride = pCtx->pCurDqLayer->iCsStride[1];
+  int32_t iUVStride = pCtx->pCurDqLayer->pDec->iLinesize[1];
 
   /*common use by decoder&encoder*/
   int32_t iYStride = pDqLayer->iLumaStride;
@@ -149,7 +149,7 @@ int32_t RecI16x16Mb (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLe
     int16_t* pRSI4x4 = pRS + (i << 4);
     uint8_t* pPredI4x4 = pPred + pBlockOffset[i];
 
-    if (pDqLayer->pNzc[iMBXY][g_kuiMbNonZeroCountIdx[i]] || pRSI4x4[0]) {
+    if (pDqLayer->pNzc[iMBXY][g_kuiMbCountScan4Idx[i]] || pRSI4x4[0]) {
       pIdctResAddPredFunc (pPredI4x4, iYStride, pRSI4x4);
     }
   }
@@ -184,7 +184,7 @@ typedef struct TagMCRefMember {
 } sMCRefMember;
 //according to current 8*8 block ref_index to gain reference picture
 static inline void GetRefPic (sMCRefMember* pMCRefMem, PWelsDecoderContext pCtx, int8_t* pRefIdxList,
-                                int32_t iIndex) {
+                              int32_t iIndex) {
   PPicture pRefPic;
 
   int8_t iRefIdx = pRefIdxList[iIndex];
@@ -203,7 +203,7 @@ static inline void GetRefPic (sMCRefMember* pMCRefMem, PWelsDecoderContext pCtx,
 #define MC_FLOW_SIMPLE_JUDGE 1
 #endif //MC_FLOW_SIMPLE_JUDGE
 static inline void BaseMC (sMCRefMember* pMCRefMem, int32_t iXOffset, int32_t iYOffset, SMcFunc* pMCFunc,
-                             int32_t iBlkWidth, int32_t iBlkHeight, int16_t iMVs[2]) {
+                           int32_t iBlkWidth, int32_t iBlkHeight, int16_t iMVs[2]) {
   int32_t iExpandWidth = PADDING_LENGTH;
   int32_t	iExpandHeight = PADDING_LENGTH;
 
@@ -435,7 +435,7 @@ void GetInterPred (uint8_t* pPredY, uint8_t* pPredCb, uint8_t* pPredCr, PWelsDec
 }
 
 int32_t RecChroma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLevel, PDqLayer pDqLayer) {
-  int32_t iChromaStride = pCtx->pCurDqLayer->iCsStride[1];
+  int32_t iChromaStride = pCtx->pCurDqLayer->pDec->iLinesize[1];
   PIdctResAddPredFunc pIdctResAddPredFunc = pCtx->pIdctResAddPredFunc;
 
   uint8_t i = 0, j = 0;
@@ -454,7 +454,7 @@ int32_t RecChroma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLeve
         int16_t* pRSI4x4 = &pRS[j << 4];
         uint8_t* pPredI4x4 = pPred + pBlockOffset[j];
 
-        if (pDqLayer->pNzc[iMBXY][g_kuiMbNonZeroCountIdx[16 + (i << 2) + j]] || pRSI4x4[0]) {
+        if (pDqLayer->pNzc[iMBXY][g_kuiMbCountScan4Idx[16 + (i << 2) + j]] || pRSI4x4[0]) {
           pIdctResAddPredFunc (pPredI4x4, iChromaStride, pRSI4x4);
         }
       }
@@ -465,7 +465,7 @@ int32_t RecChroma (int32_t iMBXY, PWelsDecoderContext pCtx, int16_t* pScoeffLeve
 }
 
 void FillBufForMc (uint8_t* pBuf, int32_t iBufStride, uint8_t* pSrc, int32_t iSrcStride, int32_t iSrcOffset,
-                     int32_t iBlockWidth, int32_t iBlockHeight, int32_t iSrcX, int32_t iSrcY, int32_t iPicWidth, int32_t iPicHeight) {
+                   int32_t iBlockWidth, int32_t iBlockHeight, int32_t iSrcX, int32_t iSrcY, int32_t iPicWidth, int32_t iPicHeight) {
   int32_t iY;
   int32_t iStartY, iStartX, iEndY, iEndX;
   int32_t iOffsetAdj = 0;

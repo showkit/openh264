@@ -29,7 +29,6 @@
  *     POSSIBILITY OF SUCH DAMAGE.
  *
  *
- *  welsCodecTrace.h
  *
  *  Abstract
  *      Cisco OpenH264 encoder extension utilization interface for T26
@@ -39,8 +38,8 @@
  *
  *
  *************************************************************************/
-#if !defined(AFX_WELSH264ENCODER_H__D9FAA1D1_5403_47E1_8E27_78F11EE65F02__INCLUDED_)
-#define AFX_WELSH264ENCODER_H__D9FAA1D1_5403_47E1_8E27_78F11EE65F02__INCLUDED_
+#if !defined(WELS_PLUS_WELSENCODEREXT_H)
+#define WELS_PLUS_WELSENCODEREXT_H
 
 #include "codec_api.h"
 #include "codec_def.h"
@@ -69,13 +68,15 @@ class CWelsH264SVCEncoder : public ISVCEncoder {
   virtual int EXTAPI Initialize (const SEncParamBase* argv);
   virtual int EXTAPI InitializeExt (const SEncParamExt* argv);
 
+  virtual int EXTAPI GetDefaultParams (SEncParamExt* argv);
+
   virtual int EXTAPI Uninitialize();
 
   /*
-   * return: EVideoFrameType [IDR: videoFrameTypeIDR; P: videoFrameTypeP; ERROR: videoFrameTypeInvalid]
+   * return: 0 - success; otherwise - failed;
    */
   virtual int EXTAPI EncodeFrame (const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo);
-  virtual int EXTAPI EncodeFrame2 (const SSourcePicture** kppSrcPicList, int nSrcPicNum, SFrameBSInfo* pBsInfo);
+  virtual int        EncodeFrameInternal (const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo);
 
   /*
    * return: 0 - success; otherwise - failed;
@@ -102,14 +103,13 @@ class CWelsH264SVCEncoder : public ISVCEncoder {
   virtual int EXTAPI GetOption (ENCODER_OPTION opt_id, void* option);
 
  private:
-  int Initialize2 (SWelsSvcCodingParam* argv);
-
+  int InitializeInternal (SWelsSvcCodingParam* argv);
+  void CheckProfileSetting (int32_t iLayer, EProfileIdc uiProfileIdc);
+  void CheckLevelSetting (int32_t iLayer, ELevelIdc uiLevelIdc);
+  void CheckReferenceNumSetting (int32_t iNumRef);
   sWelsEncCtx*	m_pEncContext;
 
   welsCodecTrace*			m_pWelsTrace;
-  SSourcePicture**			m_pSrcPicList;
-  int32_t						m_iSrcListSize;
-
   int32_t						m_iMaxPicWidth;
   int32_t						m_iMaxPicHeight;
 
@@ -128,10 +128,7 @@ class CWelsH264SVCEncoder : public ISVCEncoder {
 #endif//REC_FRAME_COUNT
 
   void    InitEncoder (void);
-  int32_t RawData2SrcPic (const uint8_t* pSrc);
   void    DumpSrcPicture (const uint8_t* pSrc);
-
-  XMMREG_PROTECT_DECLARE(CWelsH264SVCEncoder);
 };
 }
-#endif // !defined(AFX_WELSH264ENCODER_H__D9FAA1D1_5403_47E1_8E27_78F11EE65F02__INCLUDED_)
+#endif // !defined(WELS_PLUS_WELSENCODEREXT_H)

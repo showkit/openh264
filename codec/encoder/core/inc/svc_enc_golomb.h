@@ -147,7 +147,7 @@ if (n < pBs->iLeftBits) {
 } else {
   n -= pBs->iLeftBits;
   pBs->uiCurBits = (pBs->uiCurBits << pBs->iLeftBits) | (kuiValue >> n);
-  WRITE_BE_32(pBs->pBufPtr, pBs->uiCurBits);
+  WRITE_BE_32 (pBs->pBufPtr, pBs->uiCurBits);
   pBs->pBufPtr += 4;
   pBs->uiCurBits = kuiValue & ((1 << n) - 1);
   pBs->iLeftBits = 32 - n;
@@ -166,7 +166,7 @@ return 0;
 
 
 static inline void BsFlush (SBitStringAux* pBs) {
-WRITE_BE_32(pBs->pBufPtr, pBs->uiCurBits << pBs->iLeftBits);
+WRITE_BE_32 (pBs->pBufPtr, pBs->uiCurBits << pBs->iLeftBits);
 pBs->pBufPtr += 4 - pBs->iLeftBits / 8;
 pBs->iLeftBits = 32;
 pBs->uiCurBits = 0;	//  for future writing safe, 5/19/2010
@@ -176,11 +176,11 @@ pBs->uiCurBits = 0;	//  for future writing safe, 5/19/2010
  *	Write unsigned exp golomb codes
  */
 static inline void BsWriteUE (SBitStringAux* pBs, const uint32_t kuiValue) {
+uint32_t iTmpValue = kuiValue + 1;
 if (256 > kuiValue)	{
   BsWriteBits (pBs, g_uiGolombUELength[kuiValue], kuiValue + 1);
 } else {
   uint32_t n = 0;
-  uint32_t iTmpValue = kuiValue + 1;
 
   if (iTmpValue & 0xffff0000) {
     iTmpValue >>= 16;
@@ -243,7 +243,7 @@ return ! (pBs->iLeftBits & 0x7);
 
 
 static inline int32_t BsGetBitsPos (SBitStringAux* pBs) {
-return (((pBs->pBufPtr - pBs->pBuf) << 3) + 32 - pBs->iLeftBits);
+return (int32_t) (((pBs->pBufPtr - pBs->pBuf) << 3) + 32 - pBs->iLeftBits);
 }
 
 }

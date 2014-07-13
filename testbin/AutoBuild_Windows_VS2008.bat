@@ -9,7 +9,7 @@ SET VCBUILDEXE="C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\vcpackages
 SET CurDir=%~dp0
 SET EncoderProjectDir="..\codec\build\win32\enc\"
 SET DecoderProjectDir="..\codec\build\win32\dec\"
-SET VPProjectDir="..\processing\build\win32\"
+SET VPProjectDir="..\codec\processing\build\win32\"
 
 SET CodecBinDir="..\codec\build\win32\bin\"
 SET VPBinDir="..\processing\bin\"
@@ -24,7 +24,7 @@ rem call VP build
 echo "Welsvp Building....."
 cd %VPProjectDir%
 rem vcclean
-%VCBUILDEXE% WelsVP_2008.vcproj
+%VCBUILDEXE% WelsVP.vcproj
 
 
 rem ************************************************

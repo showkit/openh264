@@ -7,6 +7,7 @@ parser = argparse.ArgumentParser(description="Make helper parser")
 parser.add_argument("--directory", dest="directory", required=True)
 parser.add_argument("--library", dest="library", help="Make a library")
 parser.add_argument("--binary", dest="binary", help="Make a binary")
+parser.add_argument("--prefix", dest="prefix", help="Make a set of objs")
 parser.add_argument("--exclude", dest="exclude", help="Exclude file", action="append")
 parser.add_argument("--include", dest="include", help="Include file", action="append")
 parser.add_argument("--out", dest="out", help="Output file")
@@ -19,12 +20,9 @@ INCLUDE=[]
 OUTFILE="targets.mk"
 CPP_SUFFIX=".cpp"
 
-def make_o(x):
-    return os.path.splitext(x)[0] + ".o"
-
 def write_cpp_rule_pattern(f):
     src = "$(%s_SRCDIR)/%%%s"%(PREFIX, CPP_SUFFIX)
-    dst = "$(%s_SRCDIR)/%%.o"%(PREFIX)
+    dst = "$(%s_SRCDIR)/%%.$(OBJ)"%(PREFIX)
 
     f.write("%s: %s\n"%(dst, src))
     f.write('\t$(QUIET_CXX)$(CXX) $(CFLAGS) $(CXXFLAGS) $(INCLUDES) $(' + PREFIX + '_CFLAGS) $(' + PREFIX + '_INCLUDES) -c $(CXX_O) $<\n')
@@ -32,7 +30,7 @@ def write_cpp_rule_pattern(f):
 
 def write_c_rule_pattern(f):
     src = "$(%s_SRCDIR)/%%.c"%(PREFIX)
-    dst = "$(%s_SRCDIR)/%%.o"%(PREFIX)
+    dst = "$(%s_SRCDIR)/%%.$(OBJ)"%(PREFIX)
 
     f.write("%s: %s\n"%(dst, src))
     f.write('\t$(QUIET_CC)$(CC) $(CFLAGS) $(INCLUDES) $(' + PREFIX + '_CFLAGS) $(' + PREFIX + '_INCLUDES) -c $(CXX_O) $<\n')
@@ -40,10 +38,18 @@ def write_c_rule_pattern(f):
 
 def write_asm_rule_pattern(f):
     src = "$(%s_SRCDIR)/%%.asm"%(PREFIX)
-    dst = "$(%s_SRCDIR)/%%.o"%(PREFIX)
+    dst = "$(%s_SRCDIR)/%%.$(OBJ)"%(PREFIX)
 
     f.write("%s: %s\n"%(dst, src))
     f.write('\t$(QUIET_ASM)$(ASM) $(ASMFLAGS) $(ASM_INCLUDES) $(' + PREFIX + '_ASMFLAGS) $(' + PREFIX + '_ASM_INCLUDES) -o $@ $<\n')
+    f.write("\n")
+
+def write_asm_s_rule_pattern(f):
+    src = "$(%s_SRCDIR)/%%.S"%(PREFIX)
+    dst = "$(%s_SRCDIR)/%%.$(OBJ)"%(PREFIX)
+
+    f.write("%s: %s\n"%(dst, src))
+    f.write('\t$(QUIET_CCAS)$(CCAS) $(CCASFLAGS) $(ASMFLAGS) $(INCLUDES) $(' + PREFIX + '_CFLAGS) $(' + PREFIX + '_INCLUDES) -c -o $@ $<\n')
     f.write("\n")
 
 
@@ -51,6 +57,7 @@ def find_sources():
     cpp_files = []
     asm_files = []
     c_files = []
+    s_files = []
     print EXCLUDE
     for dir in os.walk("."):
         for file in dir[2]:
@@ -61,7 +68,9 @@ def find_sources():
                     asm_files.append(os.path.join(dir[0].strip('./'), file))
                 if os.path.splitext(file)[1] == '.c':
                     c_files.append(os.path.join(dir[0].strip('./'), file))
-    return [cpp_files, asm_files, c_files]
+                if os.path.splitext(file)[1] == '.S':
+                    s_files.append(os.path.join(dir[0].strip('./'), file))
+    return [cpp_files, asm_files, c_files, s_files]
 
 
 args = parser.parse_args()
@@ -70,8 +79,10 @@ if args.library is not None:
     PREFIX=args.library.upper()
 elif args.binary is not None:
     PREFIX=args.binary.upper()
+elif args.prefix is not None:
+    PREFIX=args.prefix.upper()
 else:
-    sys.stderr.write("Must provide either library or binary")
+    sys.stderr.write("Must provide either library, binary or prefix")
     sys.exit(1)
 
 if args.exclude is not None:
@@ -88,10 +99,24 @@ if args.cpp_suffix is not None:
 OUTFILE = os.path.abspath(OUTFILE)
 try:
     os.chdir(args.directory)
-except:
+except OSError as e:
+    sys.stderr.write("Error changing directory to %s\n" % e.filename)
     sys.exit(1)
 
-(cpp, asm, cfiles) = find_sources()
+(cpp, asm, cfiles, sfiles) = find_sources()
+
+cpp = sorted(cpp, key=lambda s: s.lower())
+asm = sorted(asm, key=lambda s: s.lower())
+cfiles = sorted(cfiles, key=lambda s: s.lower())
+sfiles = sorted(sfiles, key=lambda s: s.lower())
+armfiles = []
+arm64files = []
+for file in sfiles:
+    c = file.split('/')
+    if 'arm64' in c:
+        arm64files.append(file)
+    elif 'arm' in c:
+        armfiles.append(file)
 
 
 
@@ -102,22 +127,40 @@ f.write("%s_CPP_SRCS=\\\n"%(PREFIX))
 for c in cpp:
     f.write("\t$(%s_SRCDIR)/%s\\\n"%(PREFIX, c))
 f.write("\n")
-f.write("%s_OBJS += $(%s_CPP_SRCS:%s=.o)\n\n"%(PREFIX, PREFIX, CPP_SUFFIX))
+f.write("%s_OBJS += $(%s_CPP_SRCS:%s=.$(OBJ))\n\n"%(PREFIX, PREFIX, CPP_SUFFIX))
 
 if len(cfiles) > 0:
     f.write("%s_C_SRCS=\\\n"%(PREFIX))
     for cfile in cfiles:
         f.write("\t$(%s_SRCDIR)/%s\\\n"%(PREFIX, cfile))
     f.write("\n")
-    f.write("%s_OBJS += $(%s_C_SRCS:.c=.o)\n\n"%(PREFIX, PREFIX))
+    f.write("%s_OBJS += $(%s_C_SRCS:.c=.$(OBJ))\n\n"%(PREFIX, PREFIX))
 
 if len(asm) > 0:
-    f.write("ifeq ($(USE_ASM), Yes)\n")
+    f.write("ifeq ($(ASM_ARCH), x86)\n")
     f.write("%s_ASM_SRCS=\\\n"%(PREFIX))
     for c in asm:
         f.write("\t$(%s_SRCDIR)/%s\\\n"%(PREFIX, c))
     f.write("\n")
-    f.write("%s_OBJS += $(%s_ASM_SRCS:.asm=.o)\n"%(PREFIX, PREFIX))
+    f.write("%s_OBJS += $(%s_ASM_SRCS:.asm=.$(OBJ))\n"%(PREFIX, PREFIX))
+    f.write("endif\n\n")
+
+if len(armfiles) > 0:
+    f.write("ifeq ($(ASM_ARCH), arm)\n")
+    f.write("%s_ASM_ARM_SRCS=\\\n"%(PREFIX))
+    for c in armfiles:
+        f.write("\t$(%s_SRCDIR)/%s\\\n"%(PREFIX, c))
+    f.write("\n")
+    f.write("%s_OBJS += $(%s_ASM_ARM_SRCS:.S=.$(OBJ))\n"%(PREFIX, PREFIX))
+    f.write("endif\n\n")
+
+if len(arm64files) > 0:
+    f.write("ifeq ($(ASM_ARCH), arm64)\n")
+    f.write("%s_ASM_ARM64_SRCS=\\\n"%(PREFIX))
+    for c in arm64files:
+        f.write("\t$(%s_SRCDIR)/%s\\\n"%(PREFIX, c))
+    f.write("\n")
+    f.write("%s_OBJS += $(%s_ASM_ARM64_SRCS:.S=.$(OBJ))\n"%(PREFIX, PREFIX))
     f.write("endif\n\n")
 
 f.write("OBJS += $(%s_OBJS)\n"%PREFIX)
@@ -130,6 +173,9 @@ if len(cfiles) > 0:
 if len(asm) > 0:
     write_asm_rule_pattern(f)
 
+if len(sfiles) > 0:
+    write_asm_s_rule_pattern(f)
+
 if args.library is not None:
     f.write("$(LIBPREFIX)%s.$(LIBSUFFIX): $(%s_OBJS)\n"%(args.library, PREFIX))
     f.write("\t$(QUIET)rm -f $@\n")
@@ -139,8 +185,8 @@ if args.library is not None:
     f.write("LIBRARIES += $(LIBPREFIX)%s.$(LIBSUFFIX)\n"%args.library)
 
 if args.binary is not None:
-    f.write("%s$(EXEEXT): $(%s_OBJS) $(LIBS) $(%s_LIBS) $(%s_DEPS)\n"%(args.binary, PREFIX, PREFIX, PREFIX))
-    f.write("\t$(QUIET_CXX)$(CXX) $(CXX_LINK_O) $(%s_OBJS) $(%s_LDFLAGS) $(%s_LIBS) $(LDFLAGS) $(LIBS)\n\n"%(PREFIX, PREFIX, PREFIX))
+    f.write("%s$(EXEEXT): $(%s_OBJS) $(%s_DEPS)\n"%(args.binary, PREFIX, PREFIX))
+    f.write("\t$(QUIET_CXX)$(CXX) $(CXX_LINK_O) $(%s_OBJS) $(%s_LDFLAGS) $(LDFLAGS)\n\n"%(PREFIX, PREFIX))
     f.write("binaries: %s$(EXEEXT)\n"%args.binary)
     f.write("BINARIES += %s$(EXEEXT)\n"%args.binary)
 

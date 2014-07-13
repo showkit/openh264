@@ -38,8 +38,6 @@
 
 namespace WelsDec {
 
-void InitDctClipTable (void);
-
 void IdctResAddPred_c (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
 
 #if defined(__cplusplus)
@@ -49,6 +47,10 @@ extern "C" {
 #if defined(X86_ASM)
 void IdctResAddPred_mmx (uint8_t* pPred, const int32_t kiStride, int16_t* pRs);
 #endif//X86_ASM
+
+#if defined(HAVE_NEON)
+void IdctResAddPred_neon (uint8_t* pred, const int32_t stride, int16_t* rs);
+#endif
 
 #if defined(__cplusplus)
 }

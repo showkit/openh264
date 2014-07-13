@@ -67,12 +67,9 @@ bool		bAvailableFlag;	// indicate whether it is available in this picture memory
 uint8_t		uiTemporalId;
 uint8_t		uiSpatialId;
 uint8_t		uiQualityId;
-bool		bRefBaseFlag;
 
 int32_t		iFrameNum;		// frame number			//for ref pic management
 int32_t		iLongTermFrameIdx;					//id for long term ref pic
-
-int32_t     iTotalNumMbRec; //show how many MB constructed
 
 int32_t     iSpsId; //against mosaic caused by cross-IDR interval reference.
 int32_t     iPpsId;

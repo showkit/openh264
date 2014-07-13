@@ -47,18 +47,6 @@
 
 #include "codec_app_def.h"
 namespace WelsSVCEnc {
-/*!
- * \brief	SSlice mode
- */
-typedef uint16_t SliceMode;
-typedef enum {
-SM_SINGLE_SLICE         = 0,
-SM_FIXEDSLCNUM_SLICE	= 1,
-SM_RASTER_SLICE			= 2,
-SM_ROWMB_SLICE			= 3,
-SM_DYN_SLICE			= 4,
-SM_RESERVED				= 5
-} SliceModeEnum;
 
 
 // NOTE:
@@ -85,7 +73,7 @@ SM_RESERVED				= 5
  */
 /* Single/multiple slices */
 typedef struct SlicepEncCtx_s {
-SliceMode		uiSliceMode;			/* 0: single slice in frame; 1: multiple slices in frame; */
+SliceModeEnum		uiSliceMode;			/* 0: single slice in frame; 1: multiple slices in frame; */
 int16_t			iMbWidth;			/* width of picture size in mb */
 int16_t			iMbHeight;			/* height of picture size in mb */
 int16_t			iSliceNumInFrame;	/* count number of slices in frame; */
@@ -107,6 +95,7 @@ uint32_t    uiBsStackCurBits;
 int32_t		iBsStackLeftBits;
 
 int32_t		iMbSkipRunStack;
+uint8_t   uiLastMbQp;
 } SDynamicSlicingStack;
 
 /*!
@@ -204,7 +193,7 @@ bool CheckFixedSliceNumMultiSliceSetting (const int32_t kiMbNumInFrame,  SSliceA
 bool CheckRasterMultiSliceSetting (const int32_t kiMbNumInFrame, SSliceArgument* pSliceArg);
 bool CheckRowMbMultiSliceSetting (const int32_t kiMbWidth,  SSliceArgument* pSliceArg);
 
-void GomValidCheckSliceNum (const int32_t kiMbWidth, const int32_t kiMbHeight, int32_t* pSliceNum);
+void GomValidCheckSliceNum (const int32_t kiMbWidth, const int32_t kiMbHeight, uint32_t* pSliceNum);
 void GomValidCheckSliceMbNum (const int32_t kiMbWidth, const int32_t kiMbHeight,  SSliceArgument* pSliceArg);
 //end of checking valid para
 

@@ -80,37 +80,24 @@ return UINT_MAX;
 typedef struct TagDLayerParam {
 int32_t		iActualWidth;			// input source picture actual width
 int32_t		iActualHeight;			// input source picture actual height
-int32_t		iFrameWidth;			// frame width
-int32_t		iFrameHeight;			// frame height
-
-int32_t		iSpatialBitrate;
-
-/* temporal settings related */
 int32_t		iTemporalResolution;
 int32_t		iDecompositionStages;
 uint8_t     uiCodingIdx2TemporalId[ (1 << MAX_TEMPORAL_LEVEL) + 1];
 
-uint8_t		uiProfileIdc;			// value of profile IDC (0 for auto-detection)
-
 int8_t		iHighestTemporalId;
-//	uint8_t		uiDependencyId;
-int8_t      iDLayerQp;
-
-SSliceConfig sSliceCfg;	// multiple slice options
-
 float		fInputFrameRate;		// input frame rate
 float		fOutputFrameRate;		// output frame rate
 
 #ifdef ENABLE_FRAME_DUMP
 char		sRecFileName[MAX_FNAME_LEN];	// file to be constructed
 #endif//ENABLE_FRAME_DUMP
-} SDLayerParam;
+} SSpatialLayerInternal;
 
 /*
  *	Cisco OpenH264 Encoder Parameter Configuration
  */
-typedef struct TagWelsSvcCodingParam: SEncParamExt{
-SDLayerParam	sDependencyLayers[MAX_DEPENDENCY_LAYER];
+typedef struct TagWelsSvcCodingParam: SEncParamExt {
+SSpatialLayerInternal	sDependencyLayers[MAX_DEPENDENCY_LAYER];
 
 /* General */
 uint32_t	uiGopSize;			// GOP size (at maximal frame rate: 16)
@@ -124,26 +111,85 @@ struct {
 char*       pCurPath; // record current lib path such as:/pData/pData/com.wels.enc/lib/
 
 bool		bDeblockingParallelFlag;	// deblocking filter parallelization control flag
-bool		bMgsT0OnlyStrategy; //MGS_T0_only_strategy
 
-// FALSE: Streaming Video Sharing; TRUE: Video Conferencing Meeting;
+short
+iCountThreadsNum;                       //              # derived from disable_multiple_slice_idc (=0 or >1) means;
 
 int8_t		iDecompStages;		// GOP size dependency
-
+int32_t  iMaxNumRefFrame;
 
  public:
-TagWelsSvcCodingParam (const bool kbEnableRc = true) {
-  FillDefault (kbEnableRc);
+TagWelsSvcCodingParam() {
+  FillDefault();
 }
 ~TagWelsSvcCodingParam()	{}
 
-void FillDefault (const bool kbEnableRc) {
-  uiGopSize			= 1;			// GOP size (at maximal frame rate: 16)
-  uiIntraPeriod		= 0;			// intra period (multiple of GOP size as desired)
-  iNumRefFrame		= MIN_REF_PIC_COUNT;	// number of reference frame used
+static void FillDefault (SEncParamExt& param) {
+  memset (&param, 0, sizeof (param));
+  param.uiIntraPeriod		= 0;			// intra period (multiple of GOP size as desired)
+  param.iNumRefFrame		= AUTO_REF_PIC_COUNT;// number of reference frame used
 
-  iPicWidth	= 0;    //   actual input picture width
-  iPicHeight	= 0;	//   actual input picture height
+  param.iPicWidth	= 0;    //   actual input picture width
+  param.iPicHeight	= 0;	//   actual input picture height
+
+  param.fMaxFrameRate		= MAX_FRAME_RATE;	// maximal frame rate [Hz / fps]
+
+  param.iComplexityMode = MEDIUM_COMPLEXITY;
+  param.iTargetBitrate			= 0;	// overall target bitrate introduced in RC module
+  param.iMaxBitrate             = MAX_BIT_RATE;
+  param.iMultipleThreadIdc		= 1;
+
+  param.iLTRRefNum				= 0;
+  param.iLtrMarkPeriod			= 30;	//the min distance of two int32_t references
+
+  param.bEnableSSEI					= true;
+  param.bEnableFrameCroppingFlag	= true;	// enable frame cropping flag: true alwayse in application
+  // false: Streaming Video Sharing; true: Video Conferencing Meeting;
+
+  /* Deblocking loop filter */
+  param.iLoopFilterDisableIdc		= 0;	// 0: on, 1: off, 2: on except for slice boundaries
+  param.iLoopFilterAlphaC0Offset	= 0;	// AlphaOffset: valid range [-6, 6], default 0
+  param.iLoopFilterBetaOffset		= 0;	// BetaOffset:	valid range [-6, 6], default 0
+
+  /* Rate Control */
+  param.iRCMode			= RC_QUALITY_MODE;
+  param.iPaddingFlag	= 0;
+
+  param.bEnableDenoise				= false;	// denoise control
+  param.bEnableSceneChangeDetect	= true;		// scene change detection control
+  param.bEnableBackgroundDetection	= true;		// background detection control
+  param.bEnableAdaptiveQuant		= true;		// adaptive quantization control
+  param.bEnableFrameSkip		= true;		// frame skipping
+  param.bEnableLongTermReference	= false;	// long term reference control
+  param.bEnableSpsPpsIdAddition	= true;		// pSps pPps id addition control
+  param.bPrefixNalAddingCtrl		= false;		// prefix NAL adding control
+  param.iSpatialLayerNum		= 1;		// number of dependency(Spatial/CGS) layers used to be encoded
+  param.iTemporalLayerNum			= 1;		// number of temporal layer specified
+
+  param.iMaxQp = 51;
+  param.iMinQp = 0;
+  param.iUsageType = CAMERA_VIDEO_REAL_TIME;
+  param.uiMaxNalSize = 0;
+
+  for (int32_t iLayer = 0; iLayer < MAX_SPATIAL_LAYER_NUM; iLayer++) {
+    param.sSpatialLayers[iLayer].uiProfileIdc = PRO_BASELINE;
+    param.sSpatialLayers[iLayer].uiLevelIdc = LEVEL_5_0;
+    param.sSpatialLayers[iLayer].iDLayerQp = SVC_QUALITY_BASE_QP;
+    param.sSpatialLayers[iLayer].fFrameRate = param.fMaxFrameRate;
+    param.sSpatialLayers[iLayer].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
+    param.sSpatialLayers[iLayer].sSliceCfg.sSliceArgument.uiSliceSizeConstraint = 1500;
+    param.sSpatialLayers[iLayer].sSliceCfg.sSliceArgument.uiSliceNum = 1;
+
+    const int32_t kiLesserSliceNum = ((MAX_SLICES_NUM < MAX_SLICES_NUM_TMP) ? MAX_SLICES_NUM : MAX_SLICES_NUM_TMP);
+    for (int32_t idx = 0; idx < kiLesserSliceNum; idx++)
+      param.sSpatialLayers[iLayer].sSliceCfg.sSliceArgument.uiSliceMbNum[idx] = 960;
+  }
+}
+
+void FillDefault() {
+  FillDefault (*this);
+  uiGopSize			= 1;			// GOP size (at maximal frame rate: 16)
+  iMaxNumRefFrame = 1;
   SUsedPicRect.iLeft	=
     SUsedPicRect.iTop	=
       SUsedPicRect.iWidth	=
@@ -151,80 +197,34 @@ void FillDefault (const bool kbEnableRc) {
 
   pCurPath			= NULL; // record current lib path such as:/pData/pData/com.wels.enc/lib/
 
-  fMaxFrameRate		= MAX_FRAME_RATE;	// maximal frame rate [Hz / fps]
-  iInputCsp			= videoFormatI420;	// input sequence color space in default
-  uiFrameToBeCoded	= (uint32_t) - 1;		// frame to be encoded (at input frame rate)
-
-  iTargetBitrate			= 0;	// overall target bitrate introduced in RC module
   bDeblockingParallelFlag = false;	// deblocking filter parallelization control flag
-#ifdef MT_ENABLED
-  iMultipleThreadIdc		= 0;	// auto to detect cpu cores inside
-#else
-  iMultipleThreadIdc		=
-    1;	// 1 # 0: auto(dynamic imp. internal encoder); 1: multiple threads imp. disabled; > 1: count number of threads;
-#endif//MT_ENABLED
+
   iCountThreadsNum		= 1;	//		# derived from disable_multiple_slice_idc (=0 or >1) means;
 
-  iLTRRefNum				= 0;
-  iLtrMarkPeriod			= 30;	//the min distance of two int32_t references
-
-  bMgsT0OnlyStrategy			=
-    true;	// Strategy of have MGS only at T0 frames (0: do not use this strategy; 1: use this strategy)
-  bEnableSSEI					= true;
-  bEnableFrameCroppingFlag	= true;	// enable frame cropping flag: true alwayse in application
-  // false: Streaming Video Sharing; true: Video Conferencing Meeting;
   iDecompStages				= 0;	// GOP size dependency, unknown here and be revised later
-
-  /* Deblocking loop filter */
-  iLoopFilterDisableIdc		= 1;	// 0: on, 1: off, 2: on except for slice boundaries
-  iLoopFilterAlphaC0Offset	= 0;	// AlphaOffset: valid range [-6, 6], default 0
-  iLoopFilterBetaOffset		= 0;	// BetaOffset:	valid range [-6, 6], default 0
-  iInterLayerLoopFilterDisableIdc		= 1;	// Employed based upon inter-layer, same comment as above
-  iInterLayerLoopFilterAlphaC0Offset	= 0;	// InterLayerLoopFilterAlphaC0Offset
-  iInterLayerLoopFilterBetaOffset		= 0;	// InterLayerLoopFilterBetaOffset
-
-  /* Rate Control */
-  bEnableRc		= kbEnableRc;
-  iRCMode			= 0;
-  iPaddingFlag	= 0;
-
-  bEnableDenoise				= false;	// denoise control
-  bEnableSceneChangeDetect	= true;		// scene change detection control
-  bEnableBackgroundDetection	= true;		// background detection control
-  bEnableAdaptiveQuant		= true;		// adaptive quantization control
-  bEnableFrameSkip		= true;		// frame skipping
-  bEnableLongTermReference	= false;	// long term reference control
-  bEnableSpsPpsIdAddition	= true;		// pSps pPps id addition control
-  bPrefixNalAddingCtrl		= true;		// prefix NAL adding control
-  iSpatialLayerNum		= 1;		// number of dependency(Spatial/CGS) layers used to be encoded
-  iTemporalLayerNum			= 1;		// number of temporal layer specified
-
-  iMaxQp = 51;
-  iMinQp = 0;
-  iUsageType = 0;
-  memset(sDependencyLayers,0,sizeof(SDLayerParam)*MAX_DEPENDENCY_LAYER);
-
+  iComplexityMode = MEDIUM_COMPLEXITY;
+  memset (sDependencyLayers, 0, sizeof (SSpatialLayerInternal)*MAX_DEPENDENCY_LAYER);
+  memset (sSpatialLayers, 0 , sizeof (SSpatialLayerConfig)*MAX_SPATIAL_LAYER_NUM);
 
 
   //init multi-slice
-   sDependencyLayers[0].sSliceCfg.uiSliceMode = 0;
-   sDependencyLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint    = 1500;
-   sDependencyLayers[0].sSliceCfg.sSliceArgument.uiSliceNum      = 1;
+  sSpatialLayers[0].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
+  sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceSizeConstraint    = 1500;
+  sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceNum      = 1;
 
-   const int32_t kiLesserSliceNum = ((MAX_SLICES_NUM < MAX_SLICES_NUM_TMP) ? MAX_SLICES_NUM : MAX_SLICES_NUM_TMP);
-   for(int32_t idx = 0;idx <kiLesserSliceNum;idx++)
-		sDependencyLayers[0].sSliceCfg.sSliceArgument.uiSliceMbNum[idx] = 960;
-    sDependencyLayers[0].iDLayerQp = SVC_QUALITY_BASE_QP;
+  const int32_t kiLesserSliceNum = ((MAX_SLICES_NUM < MAX_SLICES_NUM_TMP) ? MAX_SLICES_NUM : MAX_SLICES_NUM_TMP);
+  for (int32_t idx = 0; idx < kiLesserSliceNum; idx++)
+    sSpatialLayers[0].sSliceCfg.sSliceArgument.uiSliceMbNum[idx] = 960;
+  sSpatialLayers[0].iDLayerQp = SVC_QUALITY_BASE_QP;
 
 
 }
 
-int32_t ParamBaseTranscode (const SEncParamBase& pCodingParam, const bool kbEnableRc = true) {
+int32_t ParamBaseTranscode (const SEncParamBase& pCodingParam) {
 
-  iInputCsp		= pCodingParam.iInputCsp;		// color space of input sequence
   fMaxFrameRate		= WELS_CLIP3 (pCodingParam.fMaxFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
   iTargetBitrate	= pCodingParam.iTargetBitrate;
-
+  iUsageType = pCodingParam.iUsageType;
   iPicWidth   = pCodingParam.iPicWidth;
   iPicHeight  = pCodingParam.iPicHeight;
 
@@ -233,21 +233,16 @@ int32_t ParamBaseTranscode (const SEncParamBase& pCodingParam, const bool kbEnab
   SUsedPicRect.iWidth = ((iPicWidth >> 1) << 1);
   SUsedPicRect.iHeight = ((iPicHeight >> 1) << 1);
 
-   bEnableRc			= kbEnableRc;
-  if (pCodingParam.iRCMode != RC_MODE0 && pCodingParam.iRCMode != RC_MODE1)
-    iRCMode = RC_MODE1;
-  else
-    iRCMode = pCodingParam.iRCMode;    // rc mode
-
-
+  iRCMode = pCodingParam.iRCMode;    // rc mode
 
   int8_t iIdxSpatial	= 0;
-  uint8_t uiProfileIdc		= PRO_BASELINE;
-  SDLayerParam* pDlp		= &sDependencyLayers[0];
+  EProfileIdc uiProfileIdc		= PRO_BASELINE;
+
+  SSpatialLayerInternal* pDlp		= &sDependencyLayers[0];
 
   while (iIdxSpatial < iSpatialLayerNum) {
 
-    pDlp->uiProfileIdc		= uiProfileIdc;
+    sSpatialLayers->uiProfileIdc		= uiProfileIdc;
     sSpatialLayers[iIdxSpatial].fFrameRate	= WELS_CLIP3 (pCodingParam.fMaxFrameRate,
         MIN_FRAME_RATE, MAX_FRAME_RATE);
     pDlp->fInputFrameRate	=
@@ -256,29 +251,24 @@ int32_t ParamBaseTranscode (const SEncParamBase& pCodingParam, const bool kbEnab
 #ifdef ENABLE_FRAME_DUMP
     pDlp->sRecFileName[0]	= '\0';	// file to be constructed
 #endif//ENABLE_FRAME_DUMP
-   pDlp->iActualWidth = sSpatialLayers[iIdxSpatial].iVideoWidth = iPicWidth;
-   pDlp->iFrameWidth =  WELS_ALIGN(pDlp->iActualWidth, MB_WIDTH_LUMA);
+    pDlp->iActualWidth = sSpatialLayers[iIdxSpatial].iVideoWidth = iPicWidth;
+    pDlp->iActualHeight = sSpatialLayers[iIdxSpatial].iVideoHeight = iPicHeight;
 
-  pDlp->iActualHeight = sSpatialLayers[iIdxSpatial].iVideoHeight = iPicHeight;
-  pDlp->iFrameHeight =  WELS_ALIGN(pDlp->iActualHeight, MB_HEIGHT_LUMA);
+    sSpatialLayers->iSpatialBitrate	=
+      sSpatialLayers[iIdxSpatial].iSpatialBitrate = pCodingParam.iTargetBitrate;	// target bitrate for current spatial layer
 
-    pDlp->iSpatialBitrate	=
-		sSpatialLayers[iIdxSpatial].iSpatialBitrate = pCodingParam.iTargetBitrate;	// target bitrate for current spatial layer
-
-
-   pDlp->iDLayerQp = SVC_QUALITY_BASE_QP;
+    sSpatialLayers->iDLayerQp = SVC_QUALITY_BASE_QP;
 
     uiProfileIdc	= PRO_SCALABLE_BASELINE;
     ++ pDlp;
     ++ iIdxSpatial;
   }
-   SetActualPicResolution();
+  SetActualPicResolution();
 
-   return 0;
+  return 0;
 }
 void GetBaseParams (SEncParamBase* pCodingParam) {
   pCodingParam->iUsageType     = iUsageType;
-  pCodingParam->iInputCsp      = iInputCsp;
   pCodingParam->iPicWidth      = iPicWidth;
   pCodingParam->iPicHeight     = iPicHeight;
   pCodingParam->iTargetBitrate = iTargetBitrate;
@@ -288,47 +278,44 @@ void GetBaseParams (SEncParamBase* pCodingParam) {
 int32_t ParamTranscode (const SEncParamExt& pCodingParam) {
   float fParamMaxFrameRate		= WELS_CLIP3 (pCodingParam.fMaxFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
 
-  iInputCsp		= pCodingParam.iInputCsp;		// color space of input sequence
-  uiFrameToBeCoded	= (uint32_t) -
-                      1;		// frame to be encoded (at input frame rate), -1 dependents on length of input sequence
-
+  iUsageType = pCodingParam.iUsageType;
   iPicWidth   = pCodingParam.iPicWidth;
   iPicHeight  = pCodingParam.iPicHeight;
+  iComplexityMode = pCodingParam.iComplexityMode;
 
   SUsedPicRect.iLeft = 0;
   SUsedPicRect.iTop  = 0;
   SUsedPicRect.iWidth = ((iPicWidth >> 1) << 1);
   SUsedPicRect.iHeight = ((iPicHeight >> 1) << 1);
 
+  iMultipleThreadIdc = pCodingParam.iMultipleThreadIdc;
+
   /* Deblocking loop filter */
   iLoopFilterDisableIdc	= pCodingParam.iLoopFilterDisableIdc;	// 0: on, 1: off, 2: on except for slice boundaries,
-#ifdef MT_ENABLED
-  if (iLoopFilterDisableIdc == 0) // Loop filter requested to be enabled
-    iLoopFilterDisableIdc = 2; // Disable loop filter on slice boundaries since that's not possible with multithreading
-#endif
-  iLoopFilterAlphaC0Offset = 0;	// AlphaOffset: valid range [-6, 6], default 0
-  iLoopFilterBetaOffset	= 0;	// BetaOffset:	valid range [-6, 6], default 0
-  iInterLayerLoopFilterDisableIdc	= iLoopFilterDisableIdc;	// Employed based upon inter-layer, same comment as above
-  iInterLayerLoopFilterAlphaC0Offset = 0;
-  iInterLayerLoopFilterBetaOffset	= 0;
+  if (iLoopFilterDisableIdc == 0
+      && iMultipleThreadIdc != 1) // Loop filter requested to be enabled, with threading enabled
+    iLoopFilterDisableIdc = 2; // Disable loop filter on slice boundaries since that's not allowed with multithreading
+  iLoopFilterAlphaC0Offset = pCodingParam.iLoopFilterAlphaC0Offset;	// AlphaOffset: valid range [-6, 6], default 0
+  iLoopFilterBetaOffset = pCodingParam.iLoopFilterBetaOffset;	// BetaOffset:	valid range [-6, 6], default 0
 
-  bEnableFrameCroppingFlag	= true;
+  bEnableFrameCroppingFlag	= pCodingParam.bEnableFrameCroppingFlag;
 
   /* Rate Control */
-  bEnableRc			= pCodingParam.bEnableRc;
-  if (pCodingParam.iRCMode != RC_MODE0 && pCodingParam.iRCMode != RC_MODE1)
-    iRCMode = RC_MODE1;
-  else
-    iRCMode = pCodingParam.iRCMode;    // rc mode
+  iRCMode = pCodingParam.iRCMode;    // rc mode
   iPaddingFlag = pCodingParam.iPaddingFlag;
 
   iTargetBitrate		= pCodingParam.iTargetBitrate;	// target bitrate
+  iMaxBitrate         = pCodingParam.iMaxBitrate;
+  if (iMaxBitrate < iTargetBitrate) {
+    iMaxBitrate  = iTargetBitrate;
+  }
 
+  uiMaxNalSize          = pCodingParam.uiMaxNalSize;
   /* Denoise Control */
   bEnableDenoise = pCodingParam.bEnableDenoise ? true : false;    // Denoise Control  // only support 0 or 1 now
 
   /* Scene change detection control */
-  bEnableSceneChangeDetect	= true;
+  bEnableSceneChangeDetect	= pCodingParam.bEnableSceneChangeDetect;
 
   /* Background detection Control */
   bEnableBackgroundDetection = pCodingParam.bEnableBackgroundDetection ? true : false;
@@ -344,25 +331,42 @@ int32_t ParamTranscode (const SEncParamExt& pCodingParam) {
   iLtrMarkPeriod = pCodingParam.iLtrMarkPeriod;
 
   /* For ssei information */
-  bEnableSSEI		= true;
+  bEnableSSEI		= pCodingParam.bEnableSSEI;
 
   /* Layer definition */
   iSpatialLayerNum	= (int8_t)WELS_CLIP3 (pCodingParam.iSpatialLayerNum, 1,
-                        MAX_DEPENDENCY_LAYER); // number of dependency(Spatial/CGS) layers used to be encoded
-  iTemporalLayerNum		= (int8_t)WELS_CLIP3(pCodingParam.iTemporalLayerNum, 1, MAX_TEMPORAL_LEVEL);// number of temporal layer specified
+                                          MAX_DEPENDENCY_LAYER); // number of dependency(Spatial/CGS) layers used to be encoded
+  iTemporalLayerNum		= (int8_t)WELS_CLIP3 (pCodingParam.iTemporalLayerNum, 1,
+                        MAX_TEMPORAL_LEVEL); // number of temporal layer specified
 
   uiGopSize			= 1 << (iTemporalLayerNum - 1);	// Override GOP size based temporal layer
   iDecompStages		= iTemporalLayerNum - 1;	// WELS_LOG2( uiGopSize );// GOP size dependency
   uiIntraPeriod		= pCodingParam.uiIntraPeriod;// intra period (multiple of GOP size as desired)
   if (uiIntraPeriod == (uint32_t) (-1))
     uiIntraPeriod = 0;
-  else if (uiIntraPeriod & uiGopSize)	// none multiple of GOP size
+  else if (uiIntraPeriod & (uiGopSize - 1))	// none multiple of GOP size
     uiIntraPeriod = ((uiIntraPeriod + uiGopSize - 1) / uiGopSize) * uiGopSize;
 
-  iLTRRefNum = bEnableLongTermReference ? LONG_TERM_REF_NUM : 0;
-  iNumRefFrame		= ((uiGopSize >> 1) > 1) ? ((uiGopSize >> 1) + iLTRRefNum) : (MIN_REF_PIC_COUNT + iLTRRefNum);
-  iNumRefFrame		= WELS_CLIP3 (iNumRefFrame, MIN_REF_PIC_COUNT, MAX_REFERENCE_PICTURE_COUNT_NUM);
+  if (iUsageType == SCREEN_CONTENT_REAL_TIME) {
+    if (bEnableLongTermReference) {
+      iLTRRefNum = LONG_TERM_REF_NUM_SCREEN;
+      if (iNumRefFrame == AUTO_REF_PIC_COUNT)
+        iNumRefFrame = WELS_MAX (1, WELS_LOG2 (uiGopSize)) + iLTRRefNum;
+    } else {
+      iLTRRefNum = 0;
 
+      if (iNumRefFrame == AUTO_REF_PIC_COUNT)
+        iNumRefFrame = WELS_MAX (1, uiGopSize >> 1);
+    }
+  } else {
+    iLTRRefNum = bEnableLongTermReference ? LONG_TERM_REF_NUM : 0;
+    if (iNumRefFrame == AUTO_REF_PIC_COUNT) {
+      iNumRefFrame		= ((uiGopSize >> 1) > 1) ? ((uiGopSize >> 1) + iLTRRefNum) : (MIN_REF_PIC_COUNT + iLTRRefNum);
+      iNumRefFrame		= WELS_CLIP3 (iNumRefFrame, MIN_REF_PIC_COUNT, MAX_REFERENCE_PICTURE_COUNT_NUM);
+    }
+  }
+  if (iNumRefFrame > iMaxNumRefFrame)
+    iMaxNumRefFrame = iNumRefFrame;
   iLtrMarkPeriod  = pCodingParam.iLtrMarkPeriod;
 
   bPrefixNalAddingCtrl	= pCodingParam.bPrefixNalAddingCtrl;
@@ -371,44 +375,49 @@ int32_t ParamTranscode (const SEncParamExt& pCodingParam) {
     pCodingParam.bEnableSpsPpsIdAddition;//For SVC meeting application, to avoid mosaic issue caused by cross-IDR reference.
   //SHOULD enable this feature.
 
-  SDLayerParam* pDlp		= &sDependencyLayers[0];
+  SSpatialLayerInternal* pDlp		= &sDependencyLayers[0];
+  SSpatialLayerConfig* pSpatialLayer = &sSpatialLayers[0];
   float fMaxFr			= .0f;
-  uint8_t uiProfileIdc		= PRO_BASELINE;
+  EProfileIdc uiProfileIdc		= PRO_BASELINE;
   int8_t iIdxSpatial	= 0;
   while (iIdxSpatial < iSpatialLayerNum) {
-    pDlp->uiProfileIdc		= uiProfileIdc;
+    pSpatialLayer->uiProfileIdc		= (pCodingParam.sSpatialLayers[iIdxSpatial].uiProfileIdc == PRO_UNKNOWN) ? uiProfileIdc :
+                                    pCodingParam.sSpatialLayers[iIdxSpatial].uiProfileIdc;
+    pSpatialLayer->uiLevelIdc        = (pCodingParam.sSpatialLayers[iIdxSpatial].uiLevelIdc == LEVEL_UNKNOWN) ? LEVEL_5_0 :
+                                       pCodingParam.sSpatialLayers[iIdxSpatial].uiLevelIdc;
 
     float fLayerFrameRate	= WELS_CLIP3 (pCodingParam.sSpatialLayers[iIdxSpatial].fFrameRate,
-        MIN_FRAME_RATE, fParamMaxFrameRate);
-    pDlp->fInputFrameRate	=
-      pDlp->fOutputFrameRate	= WELS_CLIP3 (fLayerFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
+                                        MIN_FRAME_RATE, fParamMaxFrameRate);
+    pSpatialLayer->fFrameRate =
+      pDlp->fInputFrameRate	=
+        pDlp->fOutputFrameRate	= WELS_CLIP3 (fLayerFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
     if (pDlp->fInputFrameRate > fMaxFr + EPSN)
       fMaxFr = pDlp->fInputFrameRate;
 
 #ifdef ENABLE_FRAME_DUMP
     pDlp->sRecFileName[0]	= '\0';	// file to be constructed
 #endif//ENABLE_FRAME_DUMP
-    pDlp->iFrameWidth		= pCodingParam.sSpatialLayers[iIdxSpatial].iVideoWidth;	// frame width
-    pDlp->iFrameHeight		= pCodingParam.sSpatialLayers[iIdxSpatial].iVideoHeight;// frame height
-    pDlp->iSpatialBitrate	=
+    pSpatialLayer->iVideoWidth		= pCodingParam.sSpatialLayers[iIdxSpatial].iVideoWidth;	// frame width
+    pSpatialLayer->iVideoHeight		= pCodingParam.sSpatialLayers[iIdxSpatial].iVideoHeight;// frame height
+    pSpatialLayer->iSpatialBitrate	=
       pCodingParam.sSpatialLayers[iIdxSpatial].iSpatialBitrate;	// target bitrate for current spatial layer
 
-
     //multi slice
-    pDlp->sSliceCfg.uiSliceMode = (SliceMode)pCodingParam.sSpatialLayers[iIdxSpatial].sSliceCfg.uiSliceMode;
-    pDlp->sSliceCfg.sSliceArgument.uiSliceSizeConstraint
+    pSpatialLayer->sSliceCfg.uiSliceMode = pCodingParam.sSpatialLayers[iIdxSpatial].sSliceCfg.uiSliceMode;
+    pSpatialLayer->sSliceCfg.sSliceArgument.uiSliceSizeConstraint
       = (uint32_t) (pCodingParam.sSpatialLayers[iIdxSpatial].sSliceCfg.sSliceArgument.uiSliceSizeConstraint);
-    pDlp->sSliceCfg.sSliceArgument.uiSliceNum
+    pSpatialLayer->sSliceCfg.sSliceArgument.uiSliceNum
       = pCodingParam.sSpatialLayers[iIdxSpatial].sSliceCfg.sSliceArgument.uiSliceNum;
     const int32_t kiLesserSliceNum = ((MAX_SLICES_NUM < MAX_SLICES_NUM_TMP) ? MAX_SLICES_NUM : MAX_SLICES_NUM_TMP);
-    memcpy (pDlp->sSliceCfg.sSliceArgument.uiSliceMbNum,
+    memcpy (pSpatialLayer->sSliceCfg.sSliceArgument.uiSliceMbNum,
             pCodingParam.sSpatialLayers[iIdxSpatial].sSliceCfg.sSliceArgument.uiSliceMbNum,	// confirmed_safe_unsafe_usage
             kiLesserSliceNum * sizeof (uint32_t)) ;
 
-    pDlp->iDLayerQp = pCodingParam.sSpatialLayers[iIdxSpatial].iDLayerQp;
+    pSpatialLayer->iDLayerQp = pCodingParam.sSpatialLayers[iIdxSpatial].iDLayerQp;
 
     uiProfileIdc	= PRO_SCALABLE_BASELINE;
     ++ pDlp;
+    ++ pSpatialLayer;
     ++ iIdxSpatial;
   }
 
@@ -423,15 +432,14 @@ int32_t ParamTranscode (const SEncParamExt& pCodingParam) {
 
 void SetActualPicResolution() {
   int32_t iSpatialIdx			= iSpatialLayerNum - 1;
-  SDLayerParam* pDlayer		= &sDependencyLayers[iSpatialIdx];
-
   for (; iSpatialIdx >= 0; iSpatialIdx --) {
-    pDlayer	= &sDependencyLayers[iSpatialIdx];
+    SSpatialLayerInternal* pDlayerInternal		= &sDependencyLayers[iSpatialIdx];
+    SSpatialLayerConfig* pDlayer =  &sSpatialLayers[iSpatialIdx];
 
-    pDlayer->iActualWidth = pDlayer->iFrameWidth;
-    pDlayer->iActualHeight = pDlayer->iFrameHeight;
-    pDlayer->iFrameWidth = WELS_ALIGN (pDlayer->iActualWidth, MB_WIDTH_LUMA);
-    pDlayer->iFrameHeight = WELS_ALIGN (pDlayer->iActualHeight, MB_HEIGHT_LUMA);
+    pDlayerInternal->iActualWidth = pDlayer->iVideoWidth;
+    pDlayerInternal->iActualHeight = pDlayer->iVideoHeight;
+    pDlayer->iVideoWidth = WELS_ALIGN (pDlayerInternal->iActualWidth, MB_WIDTH_LUMA);
+    pDlayer->iVideoHeight = WELS_ALIGN (pDlayerInternal->iActualHeight, MB_HEIGHT_LUMA);
   }
 }
 
@@ -444,8 +452,9 @@ void DetermineTemporalSettings() {
   const int32_t iDecStages		= WELS_LOG2 (
                                   uiGopSize);	// (int8_t)GetLogFactor(1.0f, 1.0f * pcfg->uiGopSize);	//log2(uiGopSize)
   const uint8_t* pTemporalIdList	= &g_kuiTemporalIdListTable[iDecStages][0];
-  SDLayerParam* pDlp				= &sDependencyLayers[0];
-  uint8_t uiProfileIdc				= PRO_BASELINE;
+  SSpatialLayerInternal* pDlp				= &sDependencyLayers[0];
+  SSpatialLayerConfig* pSpatialLayer = &sSpatialLayers[0];
+  EProfileIdc uiProfileIdc				= PRO_BASELINE;
   int8_t i						= 0;
 
   while (i < iSpatialLayerNum) {
@@ -455,7 +464,7 @@ void DetermineTemporalSettings() {
     int8_t iMaxTemporalId = 0;
 
     memset (pDlp->uiCodingIdx2TemporalId, INVALID_TEMPORAL_ID, sizeof (pDlp->uiCodingIdx2TemporalId));
-    pDlp->uiProfileIdc = uiProfileIdc;	// PRO_BASELINE, PRO_SCALABLE_BASELINE;
+    pSpatialLayer->uiProfileIdc = uiProfileIdc;	// PRO_BASELINE, PRO_SCALABLE_BASELINE;
 
     iNotCodedMask	= (1 << (kuiLogFactorInOutRate + kuiLogFactorMaxInRate)) - 1;
     for (uint32_t uiFrameIdx = 0; uiFrameIdx <= uiGopSize; ++ uiFrameIdx) {
@@ -474,6 +483,7 @@ void DetermineTemporalSettings() {
 
     uiProfileIdc	= PRO_SCALABLE_BASELINE;
     ++ pDlp;
+    ++ pSpatialLayer;
     ++ i;
   }
   iDecompStages = (int8_t)iDecStages;
@@ -489,9 +499,8 @@ pMa->WelsFree (*pParam, "SWelsSvcCodingParam");
 return 0;
 }
 
-static inline int32_t AllocCodingParam (SWelsSvcCodingParam** pParam, CMemoryAlign* pMa,
-                                        const int32_t kiRequestNumSpatial) {
-if (pParam == NULL || pMa == NULL || kiRequestNumSpatial < 1 || kiRequestNumSpatial > MAX_SPATIAL_LAYER_NUM)
+static inline int32_t AllocCodingParam (SWelsSvcCodingParam** pParam, CMemoryAlign* pMa) {
+if (pParam == NULL || pMa == NULL)
   return 1;
 if (*pParam != NULL) {
   FreeCodingParam (pParam, pMa);

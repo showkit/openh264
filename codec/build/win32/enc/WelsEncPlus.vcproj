@@ -42,27 +42,19 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\..\..\..\..\bin\Debug/WelsEncPlus.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common;..\..\..\processing\interface"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;WELSENCPLUS_EXPORTS;MT_ENABLED;X86_ASM"
+				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common\inc;..\..\..\processing\interface"
+				PreprocessorDefinitions="_DEBUG;_USRDLL;X86_ASM"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				PrecompiledHeaderFile=".\..\..\..\obj\encoder\plus\Debug/WelsEncPlus.pch"
+				RuntimeLibrary="1"
 				AssemblerListingLocation=".\..\..\..\obj\encoder\plus\Debug/"
 				ObjectFile=".\..\..\..\obj\encoder\plus\Debug/"
 				ProgramDataBaseFileName=".\..\..\..\obj\encoder\plus\Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="4"
 			/>
 			<Tool
@@ -78,11 +70,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(OutDir)\welsecore.lib"
+				AdditionalDependencies="$(OutDir)\welsecore.lib $(OutDir)\welsvp.lib"
 				OutputFile="$(OutDir)\welsenc.dll"
 				LinkIncremental="2"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\libs"
 				ModuleDefinitionFile="..\..\..\encoder\plus\src\wels_enc_export.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\welsenc.pdb"
@@ -104,7 +94,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
 				OutputFile="$(OutDir)/WelsEncPlus.bsc"
 			/>
 			<Tool
@@ -141,27 +130,19 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="_DEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName=".\..\..\..\..\..\bin\Debug/WelsEncPlus.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common;..\..\..\processing\interface"
-				PreprocessorDefinitions="WIN64;_DEBUG;_WINDOWS;_USRDLL;WELSENCPLUS_EXPORTS;MT_ENABLED;X86_ASM"
+				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common\inc;..\..\..\processing\interface"
+				PreprocessorDefinitions="_DEBUG;_USRDLL;X86_ASM"
 				MinimalRebuild="true"
 				BasicRuntimeChecks="3"
-				RuntimeLibrary="3"
-				PrecompiledHeaderFile=".\..\..\..\obj\encoder\plus\Debug/WelsEncPlus.pch"
+				RuntimeLibrary="1"
 				AssemblerListingLocation=".\..\..\..\obj\encoder\plus\Debug/"
 				ObjectFile=".\..\..\..\obj\encoder\plus\Debug/"
 				ProgramDataBaseFileName=".\..\..\..\obj\encoder\plus\Debug/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -177,11 +158,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(OutDir)\welsecore.lib"
+				AdditionalDependencies="$(OutDir)\welsecore.lib $(OutDir)\welsvp.lib"
 				OutputFile="$(OutDir)\welsenc.dll"
 				LinkIncremental="2"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\libs"
 				ModuleDefinitionFile="..\..\..\encoder\plus\src\wels_enc_export.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\welsenc.pdb"
@@ -203,7 +182,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
 				OutputFile="$(OutDir)/WelsEncPlus.bsc"
 			/>
 			<Tool
@@ -225,6 +203,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -240,31 +219,21 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="1"
-				TypeLibraryName=".\..\..\..\..\..\bin\Release/WelsEncPlus.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common;..\..\..\processing\interface"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;WELSENCPLUS_EXPORTS;MT_ENABLED;X86_ASM"
+				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common\inc;..\..\..\processing\interface"
+				PreprocessorDefinitions="NDEBUG;_USRDLL;X86_ASM"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\..\..\..\obj\encoder\plus\Release/WelsEncPlus.pch"
 				AssemblerListingLocation=".\..\..\..\obj\encoder\plus\Release/"
 				ObjectFile=".\..\..\..\obj\encoder\plus\Release/"
 				ProgramDataBaseFileName=".\..\..\..\obj\encoder\plus\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -280,12 +249,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:exports /LTCG"
-				AdditionalDependencies="$(OutDir)\welsecore.lib"
+				AdditionalDependencies="$(OutDir)\welsecore.lib $(OutDir)\welsvp.lib"
 				OutputFile="$(OutDir)\welsenc.dll"
 				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\libs"
 				ModuleDefinitionFile="..\..\..\encoder\plus\src\wels_enc_export.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\welsenc.pdb"
@@ -308,7 +274,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
 				OutputFile="$(OutDir)/WelsEncPlus.bsc"
 			/>
 			<Tool
@@ -330,6 +295,7 @@
 			UseOfMFC="0"
 			ATLMinimizesCRunTimeLibraryUsage="false"
 			CharacterSet="2"
+			WholeProgramOptimization="1"
 			>
 			<Tool
 				Name="VCPreBuildEventTool"
@@ -345,31 +311,21 @@
 			/>
 			<Tool
 				Name="VCMIDLTool"
-				PreprocessorDefinitions="NDEBUG"
-				MkTypLibCompatible="true"
-				SuppressStartupBanner="true"
-				TargetEnvironment="3"
-				TypeLibraryName=".\..\..\..\..\..\bin\Release/WelsEncPlus.tlb"
-				HeaderFileName=""
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="3"
 				InlineFunctionExpansion="2"
 				FavorSizeOrSpeed="1"
-				EnableFiberSafeOptimizations="true"
-				WholeProgramOptimization="true"
-				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common;..\..\..\processing\interface"
-				PreprocessorDefinitions="WIN64;NDEBUG;_WINDOWS;_USRDLL;WELSENCPLUS_EXPORTS;MT_ENABLED;X86_ASM"
+				AdditionalIncludeDirectories="..\..\..\encoder\plus\inc;..\..\..\encoder\core\inc;..\..\..\api\svc;..\..\..\common\inc;..\..\..\processing\interface"
+				PreprocessorDefinitions="NDEBUG;_USRDLL;X86_ASM"
 				StringPooling="true"
-				RuntimeLibrary="2"
+				RuntimeLibrary="0"
 				EnableFunctionLevelLinking="true"
-				PrecompiledHeaderFile=".\..\..\..\obj\encoder\plus\Release/WelsEncPlus.pch"
 				AssemblerListingLocation=".\..\..\..\obj\encoder\plus\Release/"
 				ObjectFile=".\..\..\..\obj\encoder\plus\Release/"
 				ProgramDataBaseFileName=".\..\..\..\obj\encoder\plus\Release/"
 				WarningLevel="3"
-				SuppressStartupBanner="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -385,12 +341,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalOptions="/MAPINFO:exports /LTCG"
-				AdditionalDependencies="$(OutDir)\welsecore.lib"
+				AdditionalDependencies="$(OutDir)\welsecore.lib $(OutDir)\welsvp.lib"
 				OutputFile="$(OutDir)\welsenc.dll"
 				LinkIncremental="1"
-				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="..\..\..\..\libs"
 				ModuleDefinitionFile="..\..\..\encoder\plus\src\wels_enc_export.def"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\welsenc.pdb"
@@ -413,7 +366,6 @@
 			/>
 			<Tool
 				Name="VCBscMakeTool"
-				SuppressStartupBanner="true"
 				OutputFile="$(OutDir)/WelsEncPlus.bsc"
 			/>
 			<Tool
@@ -437,126 +389,18 @@
 			<File
 				RelativePath="..\..\..\encoder\plus\src\DllEntry.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\encoder\plus\src\wels_enc_export.def"
 				>
 			</File>
 			<File
-				RelativePath="..\..\..\encoder\plus\src\welsCodecTrace.cpp"
+				RelativePath="..\..\..\common\src\welsCodecTrace.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 			<File
 				RelativePath="..\..\..\encoder\plus\src\welsEncoderExt.cpp"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCCLCompilerTool"
-						AdditionalIncludeDirectories=""
-						PreprocessorDefinitions=""
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 		<Filter
@@ -564,7 +408,7 @@
 			Filter="h;hpp;hxx;hm;inl"
 			>
 			<File
-				RelativePath="..\..\..\encoder\plus\inc\welsCodecTrace.h"
+				RelativePath="..\..\..\common\inc\welsCodecTrace.h"
 				>
 			</File>
 			<File
@@ -579,42 +423,6 @@
 			<File
 				RelativePath="..\..\..\encoder\plus\res\welsenc.rc"
 				>
-				<FileConfiguration
-					Name="Debug|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Project\svc_perf_opt_b\codec\Wels\project\encoder\plus\res"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Debug|x64"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Project\svc_perf_opt_b\codec\Wels\project\encoder\plus\res"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|Win32"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Project\svc_perf_opt_b\codec\Wels\project\encoder\plus\res"
-					/>
-				</FileConfiguration>
-				<FileConfiguration
-					Name="Release|x64"
-					>
-					<Tool
-						Name="VCResourceCompilerTool"
-						PreprocessorDefinitions=""
-						AdditionalIncludeDirectories="\Project\svc_perf_opt_b\codec\Wels\project\encoder\plus\res"
-					/>
-				</FileConfiguration>
 			</File>
 		</Filter>
 	</Files>

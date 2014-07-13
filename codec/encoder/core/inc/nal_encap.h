@@ -71,6 +71,7 @@ SBitStringAux		sBsWrite;
 
 //	SWelsNalRaw		raw_nals[MAX_DEPENDENCY_LAYER*2+MAX_DEPENDENCY_LAYER*MAX_QUALITY_LEVEL]; // AVC: max up to SPS+PPS+max_slice_idc (2 + 8) for FMO;
 SWelsNalRaw*		sNalList;			// nal list, adaptive for AVC/SVC in case single slice, multiple slices or fmo
+int32_t*      pNalLen;
 int32_t				iCountNals;			// count number of NAL in list
 // SVC: num_sps (MAX_D) + num_pps (MAX_D) + num_vcl (MAX_D * MAX_Q)
 int32_t				iNalIndex;			// coding NAL currently, 0 based
@@ -129,7 +130,8 @@ void WelsUnloadNalForSlice (SWelsSliceBs* pSliceBs);
  * \param	pRawNal			pRawNal NAL pData
  * \return	ERR_CODE
  */
-int32_t WelsEncodeNal (SWelsNalRaw* pRawNal, void* pNalHeaderExt, const int32_t kiDstBufferLen, void* pDst, int32_t* pDstLen);
+int32_t WelsEncodeNal (SWelsNalRaw* pRawNal, void* pNalHeaderExt, const int32_t kiDstBufferLen, void* pDst,
+                       int32_t* pDstLen);
 
 /*!
  * \brief	write prefix nal

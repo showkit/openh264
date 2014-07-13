@@ -81,24 +81,6 @@ static const uint8_t g_kuiABCD[8][8][4] = { ////g_kuiA[dy][dx], g_kuiB[dy][dx], 
     {4, 4, 28, 28}, {3, 5, 21, 35}, {2, 6, 14, 42}, {1, 7, 7, 49}
   }
 };
-typedef int32_t (*VerFilterFunc) (const uint8_t* pSrc, const int32_t kiSrcStride);
-typedef int32_t (*HorFilterFunc) (const uint8_t* pSrc);
-typedef int32_t (*HorFilterFuncInput16Bits) (int16_t* pSrc);
-
-VerFilterFunc fpVerFilter			= NULL;
-HorFilterFunc fpHorFilter			= NULL;
-HorFilterFuncInput16Bits fpHorFilterInput16Bits = NULL;
-
-typedef void (*WelsMcFunc0) (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight);
-typedef void (*WelsMcFunc1) (uint8_t* pDst, int32_t iDstStride, const uint8_t* psrcA, int32_t iSrcAStride,  const uint8_t* pSrcB,
-                             int32_t iSrcBStride, int32_t iHeight);
-WelsMcFunc0 McCopyWidthEq16 = NULL;
-WelsMcFunc0 McCopyWidthEq8 = NULL;
-WelsMcFunc0 McCopyWidthEq4 = NULL;
-WelsMcFunc0 pfMcHorVer02WidthEq16 = NULL;
-WelsMcFunc1 pfPixelAvgWidthEq16  = NULL;
-WelsMcFunc0 pfMcHorVer20WidthEq16 = NULL;
-WelsMcFunc0 pfMcHorVer22WidthEq16 = NULL;
 
 //***************************************************************************//
 //                          C code implementation                            //
@@ -192,7 +174,7 @@ static inline void McHorVer20WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStrid
   int32_t i, j;
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < 16; j++) {
-      pDst[j] = WELS_CLIP1 ((fpHorFilter (pSrc + j) + 16) >> 5);
+      pDst[j] = WelsClip1 ((HorFilter_c (pSrc + j) + 16) >> 5);
     }
     pDst += iDstStride;
     pSrc += iSrcStride;
@@ -204,7 +186,7 @@ static inline void McHorVer02WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStrid
   int32_t i, j;
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < 16; j++) {
-      pDst[j] = WELS_CLIP1 ((fpVerFilter (pSrc + j, iSrcStride) + 16) >> 5);
+      pDst[j] = WelsClip1 ((VerFilter_c (pSrc + j, iSrcStride) + 16) >> 5);
     }
     pDst += iDstStride;
     pSrc += iSrcStride;
@@ -218,10 +200,10 @@ static inline void McHorVer22WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStrid
 
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < 16 + 5; j++) {
-      pTmp[j] = fpVerFilter (pSrc - 2 + j, iSrcStride);
+      pTmp[j] = VerFilter_c (pSrc - 2 + j, iSrcStride);
     }
     for (k = 0; k < 16; k++) {
-      pDst[k] = WELS_CLIP1 ((fpHorFilterInput16Bits (&pTmp[2 + k]) + 512) >> 10);
+      pDst[k] = WelsClip1 ((HorFilterInput16bit1_c (&pTmp[2 + k]) + 512) >> 10);
     }
     pSrc += iSrcStride;
     pDst += iDstStride;
@@ -230,148 +212,151 @@ static inline void McHorVer22WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStrid
 
 /////////////////////luma MC//////////////////////////
 
-static inline void McHorVer01WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer01WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
 
-  pfMcHorVer02WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
 }
-static inline void McHorVer03WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer03WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
 
-  pfMcHorVer02WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
 }
-static inline void McHorVer10WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer10WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
 }
-static inline void McHorVer11WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer11WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer02WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer12WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer12WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer02WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer22WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer13WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer13WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer02WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer21WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer21WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer22WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer23WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer23WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer22WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer30WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer30WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pSrc + 1, iSrcStride, pTmp, 16, iHeight);
 }
-static inline void McHorVer31WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer31WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer02WidthEq16 (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer32WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer32WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer02WidthEq16 (pSrc + 1, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer22WidthEq16 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_c (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
-static inline void McHorVer33WidthEq16 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                                        int32_t iHeight) {
+static inline void McHorVer33WidthEq16_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
   ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
 
-  pfMcHorVer20WidthEq16 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
-  pfMcHorVer02WidthEq16 (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
-  pfPixelAvgWidthEq16 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+  McHorVer20WidthEq16_c (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_c (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_c (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
 }
 
-static inline void McHorVer20_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iWidth,
+static inline void McHorVer20_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iWidth,
                                  int32_t iHeight) {
   int32_t i, j;
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < iWidth; j++) {
-      pDst[j] = WELS_CLIP1 ((fpHorFilter (pSrc + j) + 16) >> 5);
+      pDst[j] = WelsClip1 ((HorFilter_c (pSrc + j) + 16) >> 5);
     }
     pDst += iDstStride;
     pSrc += iSrcStride;
   }
 }
 //vertical filter to gain half sample, that is (0, 2) location in quarter sample
-static inline void McHorVer02_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iWidth,
+static inline void McHorVer02_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iWidth,
                                  int32_t iHeight) {
   int32_t i, j;
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < iWidth; j++) {
-      pDst[j] = WELS_CLIP1 ((fpVerFilter (pSrc + j, iSrcStride) + 16) >> 5);
+      pDst[j] = WelsClip1 ((VerFilter_c (pSrc + j, iSrcStride) + 16) >> 5);
     }
     pDst += iDstStride;
     pSrc += iSrcStride;
   }
 }
 //horizontal and vertical filter to gain half sample, that is (2, 2) location in quarter sample
-static inline void McHorVer22_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iWidth,
+static inline void McHorVer22_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iWidth,
                                  int32_t iHeight) {
   int16_t pTmp[17 + 5] = {0}; //w+1
   int32_t i, j, k;
 
   for (i = 0; i < iHeight; i++) {
     for (j = 0; j < iWidth + 5; j++) {
-      pTmp[j] = fpVerFilter (pSrc - 2 + j, iSrcStride);
+      pTmp[j] = VerFilter_c (pSrc - 2 + j, iSrcStride);
     }
     for (k = 0; k < iWidth; k++) {
-      pDst[k] = WELS_CLIP1 ((fpHorFilterInput16Bits (&pTmp[2 + k]) + 512) >> 10);
+      pDst[k] = WelsClip1 ((HorFilterInput16bit1_c (&pTmp[2 + k]) + 512) >> 10);
     }
     pSrc += iSrcStride;
     pDst += iDstStride;
   }
 }
-static inline void McCopy (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iWidth,
-                           int32_t iHeight) {
+static inline void McCopy_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iWidth,
+                             int32_t iHeight) {
   int32_t i;
-  if (iWidth == 16 && McCopyWidthEq16 != NULL)
-    McCopyWidthEq16 (pSrc, iSrcStride, pDst, iDstStride, iHeight);
-  else if (iWidth == 8 && McCopyWidthEq8 != NULL)
-    McCopyWidthEq8 (pSrc, iSrcStride, pDst, iDstStride, iHeight);
-  else if (iWidth == 4 && McCopyWidthEq4 != NULL)
-    McCopyWidthEq4 (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  if (iWidth == 16)
+    McCopyWidthEq16_c (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else if (iWidth == 8)
+    McCopyWidthEq8_c (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else if (iWidth == 4)
+    McCopyWidthEq4_c (pSrc, iSrcStride, pDst, iDstStride, iHeight);
   else {
     for (i = 0; i < iHeight; i++) {
       memcpy (pDst, pSrc, iWidth);	// confirmed_safe_unsafe_usage
@@ -389,7 +374,7 @@ void McChroma_c (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t
   const int32_t kiDy = mv.iMvY & 0x07;
 
   if (0 == kiDx && 0 == kiDy) {
-    McCopy (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
+    McCopy_c (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
   } else {
     const int32_t kiDA = g_kuiABCD[kiDy][kiDx][0];
     const int32_t kiDB = g_kuiABCD[kiDy][kiDx][1];
@@ -444,6 +429,117 @@ void McHorVer22Width9Or17Height9Or17_sse2 (const uint8_t* pSrc, int32_t iSrcStri
   McHorVer22Width8VerLastUnAlign_sse2 ((uint8_t*)pTap + tmp1,  48, pDst + iWidth - 8, iDstStride, 8, iHeight);
 }
 
+static inline void McHorVer01WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
+
+  McHorVer02WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
+}
+static inline void McHorVer03WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
+
+  McHorVer02WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+}
+static inline void McHorVer10WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pSrc, iSrcStride, pTmp, 16, iHeight);
+}
+static inline void McHorVer11WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer12WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer02WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer13WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer21WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer23WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer30WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 256, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+}
+static inline void McHorVer31WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_sse2 (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer32WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer02WidthEq16_sse2 (pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_sse2 (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+static inline void McHorVer33WidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+
+  McHorVer20WidthEq16_sse2 (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_sse2 (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_sse2 (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+
+static inline void McCopy_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                int32_t iWidth, int32_t iHeight) {
+  int32_t i;
+  if (iWidth == 16)
+    McCopyWidthEq16_sse2 (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else if (iWidth == 8)
+    McCopyWidthEq8_mmx (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else if (iWidth == 4)
+    McCopyWidthEq4_mmx (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else {
+    for (i = 0; i < iHeight; i++) {
+      memcpy (pDst, pSrc, iWidth);	// confirmed_safe_unsafe_usage
+      pDst += iDstStride;
+      pSrc += iSrcStride;
+    }
+  }
+}
+
 typedef void (*McChromaWidthEqx) (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
                                   const uint8_t* pABCD, int32_t iHeigh);
 void McChroma_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
@@ -456,7 +552,7 @@ void McChroma_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int3
   };
 
   if (0 == kiD8x && 0 == kiD8y) {
-    McCopy (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
+    McCopy_sse2 (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
   } else {
     kpfFuncs[ (iWidth >> 3)] (pSrc, iSrcStride, pDst, iDstStride, g_kuiABCD[kiD8y][kiD8x], iHeight);
   }
@@ -472,7 +568,7 @@ void McChroma_ssse3 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int
     McChromaWidthEq8_ssse3
   };
   if (0 == kiD8x && 0 == kiD8y) {
-    McCopy (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
+    McCopy_sse2 (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
   } else {
     kpfFuncs[ (iWidth >> 3)] (pSrc, iSrcStride, pDst, iDstStride, g_kuiABCD[kiD8y][kiD8x], iHeight);
   }
@@ -480,41 +576,235 @@ void McChroma_ssse3 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int
 }
 
 #endif //X86_ASM
-typedef void (*PixelAvgFunc) (uint8_t*, int32_t, const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t);
-void WelsInitMcFuncs (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag) {
-  static PixelAvgFunc pfPixAvgFunc[2] = {PixelAvgWidthEq8_c, PixelAvgWidthEq16_c};
 
-  static PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16[16] = { //[y*4+x]
-    McCopyWidthEq16_c,  McHorVer10WidthEq16, McHorVer20WidthEq16_c,     McHorVer30WidthEq16,
-    McHorVer01WidthEq16, McHorVer11WidthEq16, McHorVer21WidthEq16, McHorVer31WidthEq16,
-    McHorVer02WidthEq16_c,     McHorVer12WidthEq16, McHorVer22WidthEq16_c,    McHorVer32WidthEq16,
-    McHorVer03WidthEq16, McHorVer13WidthEq16, McHorVer23WidthEq16, McHorVer33WidthEq16
-  };
-#if defined (X86_ASM)
-  static PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16_sse2[16] = {
-    McCopyWidthEq16_sse2,  McHorVer10WidthEq16, McHorVer20WidthEq16_sse2,     McHorVer30WidthEq16,
-    McHorVer01WidthEq16, McHorVer11WidthEq16, McHorVer21WidthEq16, McHorVer31WidthEq16,
-    McHorVer02WidthEq16_sse2,     McHorVer12WidthEq16, McHorVer22WidthEq16_sse2,    McHorVer32WidthEq16,
-    McHorVer03WidthEq16, McHorVer13WidthEq16, McHorVer23WidthEq16, McHorVer33WidthEq16
-  };
+//***************************************************************************//
+//                       NEON implementation                      //
+//***************************************************************************//
+#if defined(HAVE_NEON)
+void McHorVer20Width9Or17_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 17)
+    McHorVer20Width17_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 9)
+    McHorVer20Width9_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void McHorVer02Height9Or17_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 16)
+    McHorVer02Height17_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 8)
+    McHorVer02Height9_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void McHorVer22Width9Or17Height9Or17_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 17)
+    McHorVer22Width17_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 9)
+    McHorVer22Width9_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void EncMcHorVer11_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer12_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer02WidthEq16_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer13_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer21_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer23_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer31_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_neon (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer32_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer02WidthEq16_neon (pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcHorVer33_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride, int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_neon (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_neon (pDst, iDstStride, pTmp, &pTmp[256], iHeight);
+}
+void EncMcChroma_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                       SMVUnitXY sMv, int32_t iWidth, int32_t iHeight) {
+  const int32_t kiD8x = sMv.iMvX & 0x07;
+  const int32_t kiD8y = sMv.iMvY & 0x07;
+  if (0 == kiD8x && 0 == kiD8y) {
+    if (8 == iWidth)
+      McCopyWidthEq8_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+    else // iWidth == 4
+      McCopyWidthEq4_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  } else {
+    if (8 == iWidth)
+      McChromaWidthEq8_neon (pSrc, iSrcStride, pDst, iDstStride, (int32_t*) (g_kuiABCD[kiD8y][kiD8x]), iHeight);
+    else //if(4 == iWidth)
+      McChromaWidthEq4_neon (pSrc, iSrcStride, pDst, iDstStride, (int32_t*) (g_kuiABCD[kiD8y][kiD8x]), iHeight);
+  }
+}
 #endif
 
+#if defined(HAVE_NEON_AARCH64)
+void McHorVer20Width9Or17_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                        int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 17)
+    McHorVer20Width17_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 9)
+    McHorVer20Width9_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void McHorVer02Height9Or17_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+    int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 16)
+    McHorVer02Height17_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 8)
+    McHorVer02Height9_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void McHorVer22Width9Or17Height9Or17_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst,
+    int32_t iDstStride,
+    int32_t iWidth, int32_t iHeight) {
+  if (iWidth == 17)
+    McHorVer22Width17_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  else //if (iWidth == 9)
+    McHorVer22Width9_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+}
+void EncMcHorVer11_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer12_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer02WidthEq16_AArch64_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer13_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer21_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer23_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer31_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_AArch64_neon (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer32_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer02WidthEq16_AArch64_neon (pSrc + 1, iSrcStride, pTmp, 16, iHeight);
+  McHorVer22WidthEq16_AArch64_neon (pSrc, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcHorVer33_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                                 int32_t iHeight) {
+  ENFORCE_STACK_ALIGN_1D (uint8_t, pTmp, 512, 16)
+  McHorVer20WidthEq16_AArch64_neon (pSrc + iSrcStride, iSrcStride, pTmp, 16, iHeight);
+  McHorVer02WidthEq16_AArch64_neon (pSrc + 1, iSrcStride, &pTmp[256], 16, iHeight);
+  PixelAvgWidthEq16_AArch64_neon (pDst, iDstStride, pTmp, 16, &pTmp[256], 16, iHeight);
+}
+void EncMcChroma_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
+                               SMVUnitXY sMv, int32_t iWidth, int32_t iHeight) {
+  const int32_t kiD8x = sMv.iMvX & 0x07;
+  const int32_t kiD8y = sMv.iMvY & 0x07;
+  if (0 == kiD8x && 0 == kiD8y) {
+    if (8 == iWidth)
+      McCopyWidthEq8_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+    else // iWidth == 4
+      McCopyWidthEq4_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, iHeight);
+  } else {
+    if (8 == iWidth)
+      McChromaWidthEq8_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, (int32_t*) (g_kuiABCD[kiD8y][kiD8x]), iHeight);
+    else //if(4 == iWidth)
+      McChromaWidthEq4_AArch64_neon (pSrc, iSrcStride, pDst, iDstStride, (int32_t*) (g_kuiABCD[kiD8y][kiD8x]), iHeight);
+  }
+}
+#endif
+
+typedef void (*PixelAvgFunc) (uint8_t*, int32_t, const uint8_t*, int32_t, const uint8_t*, int32_t, int32_t);
+void WelsInitMcFuncs (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag) {
+  static const PixelAvgFunc pfPixAvgFunc[2] = {PixelAvgWidthEq8_c, PixelAvgWidthEq16_c};
+
+  static const PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16[16] = { //[y*4+x]
+    McCopyWidthEq16_c,     McHorVer10WidthEq16_c, McHorVer20WidthEq16_c, McHorVer30WidthEq16_c,
+    McHorVer01WidthEq16_c, McHorVer11WidthEq16_c, McHorVer21WidthEq16_c, McHorVer31WidthEq16_c,
+    McHorVer02WidthEq16_c, McHorVer12WidthEq16_c, McHorVer22WidthEq16_c, McHorVer32WidthEq16_c,
+    McHorVer03WidthEq16_c, McHorVer13WidthEq16_c, McHorVer23WidthEq16_c, McHorVer33WidthEq16_c
+  };
+#if defined (X86_ASM)
+  static const PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16_sse2[16] = {
+    McCopyWidthEq16_sse2,     McHorVer10WidthEq16_sse2, McHorVer20WidthEq16_sse2, McHorVer30WidthEq16_sse2,
+    McHorVer01WidthEq16_sse2, McHorVer11WidthEq16_sse2, McHorVer21WidthEq16_sse2, McHorVer31WidthEq16_sse2,
+    McHorVer02WidthEq16_sse2, McHorVer12WidthEq16_sse2, McHorVer22WidthEq16_sse2, McHorVer32WidthEq16_sse2,
+    McHorVer03WidthEq16_sse2, McHorVer13WidthEq16_sse2, McHorVer23WidthEq16_sse2, McHorVer33WidthEq16_sse2
+  };
+#endif
+#if defined(HAVE_NEON)
+  static const PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16_neon[16] = { //[x][y]
+    McCopyWidthEq16_neon,        McHorVer10WidthEq16_neon,   McHorVer20WidthEq16_neon,    McHorVer30WidthEq16_neon,
+    McHorVer01WidthEq16_neon,    EncMcHorVer11_neon,         EncMcHorVer21_neon,          EncMcHorVer31_neon,
+    McHorVer02WidthEq16_neon,    EncMcHorVer12_neon,         McHorVer22WidthEq16_neon,    EncMcHorVer32_neon,
+    McHorVer03WidthEq16_neon,    EncMcHorVer13_neon,         EncMcHorVer23_neon,          EncMcHorVer33_neon
+  };
+#endif
+#if defined(HAVE_NEON_AARCH64)
+  static const PWelsLumaQuarpelMcFunc pWelsMcFuncWidthEq16_AArch64_neon[16] = { //[x][y]
+    McCopyWidthEq16_AArch64_neon,        McHorVer10WidthEq16_AArch64_neon,   McHorVer20WidthEq16_AArch64_neon,    McHorVer30WidthEq16_AArch64_neon,
+    McHorVer01WidthEq16_AArch64_neon,    EncMcHorVer11_AArch64_neon,         EncMcHorVer21_AArch64_neon,          EncMcHorVer31_AArch64_neon,
+    McHorVer02WidthEq16_AArch64_neon,    EncMcHorVer12_AArch64_neon,         McHorVer22WidthEq16_AArch64_neon,    EncMcHorVer32_AArch64_neon,
+    McHorVer03WidthEq16_AArch64_neon,    EncMcHorVer13_AArch64_neon,         EncMcHorVer23_AArch64_neon,          EncMcHorVer33_AArch64_neon
+  };
+#endif
   pFuncList->sMcFuncs.pfLumaHalfpelHor = McHorVer20_c;
   pFuncList->sMcFuncs.pfLumaHalfpelVer = McHorVer02_c;
   pFuncList->sMcFuncs.pfLumaHalfpelCen = McHorVer22_c;
-  pFuncList->sMcFuncs.pfSampleAveraging = pfPixAvgFunc;
+  memcpy (pFuncList->sMcFuncs.pfSampleAveraging, pfPixAvgFunc, sizeof (pfPixAvgFunc));
   pFuncList->sMcFuncs.pfChromaMc	= McChroma_c;
-  fpVerFilter				= VerFilter_c;
-  fpHorFilter				= HorFilter_c;
-  fpHorFilterInput16Bits			= HorFilterInput16bit1_c;
-  McCopyWidthEq4 = McCopyWidthEq4_c;
-  McCopyWidthEq8 = McCopyWidthEq8_c;
-  McCopyWidthEq16 = McCopyWidthEq16_c;
-  pfPixelAvgWidthEq16 = PixelAvgWidthEq16_c;
-  pfMcHorVer02WidthEq16 = McHorVer02WidthEq16_c;
-  pfMcHorVer20WidthEq16 = McHorVer20WidthEq16_c;
-  pfMcHorVer22WidthEq16 = McHorVer22WidthEq16_c;
-  pFuncList->sMcFuncs.pfLumaQuarpelMc = pWelsMcFuncWidthEq16;
+  memcpy (pFuncList->sMcFuncs.pfLumaQuarpelMc, pWelsMcFuncWidthEq16, sizeof (pWelsMcFuncWidthEq16));
 #if defined (X86_ASM)
   if (uiCpuFlag & WELS_CPU_SSE2) {
     pFuncList->sMcFuncs.pfLumaHalfpelHor = McHorVer20Width9Or17_sse2;
@@ -523,14 +813,7 @@ void WelsInitMcFuncs (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag) {
     pFuncList->sMcFuncs.pfSampleAveraging[0] = PixelAvgWidthEq8_mmx;
     pFuncList->sMcFuncs.pfSampleAveraging[1] = PixelAvgWidthEq16_sse2;
     pFuncList->sMcFuncs.pfChromaMc = McChroma_sse2;
-    McCopyWidthEq4 = McCopyWidthEq4_mmx;
-    McCopyWidthEq8 = McCopyWidthEq8_mmx;
-    McCopyWidthEq16 = McCopyWidthEq16_sse2;
-    pfPixelAvgWidthEq16 = PixelAvgWidthEq16_sse2;
-    pfMcHorVer02WidthEq16 = McHorVer02WidthEq16_sse2;
-    pfMcHorVer20WidthEq16 = McHorVer20WidthEq16_sse2;
-    pfMcHorVer22WidthEq16 = McHorVer22WidthEq16_sse2;
-    pFuncList->sMcFuncs.pfLumaQuarpelMc = pWelsMcFuncWidthEq16_sse2;
+    memcpy (pFuncList->sMcFuncs.pfLumaQuarpelMc, pWelsMcFuncWidthEq16_sse2, sizeof (pWelsMcFuncWidthEq16_sse2));
   }
 
   if (uiCpuFlag & WELS_CPU_SSSE3) {
@@ -538,5 +821,29 @@ void WelsInitMcFuncs (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag) {
   }
 
 #endif //(X86_ASM)
+
+#if defined(HAVE_NEON)
+  if (uiCpuFlag & WELS_CPU_NEON) {
+    memcpy (pFuncList->sMcFuncs.pfLumaQuarpelMc, pWelsMcFuncWidthEq16_neon, sizeof (pWelsMcFuncWidthEq16_neon));
+    pFuncList->sMcFuncs.pfChromaMc	= EncMcChroma_neon;
+    pFuncList->sMcFuncs.pfSampleAveraging[0] = PixStrideAvgWidthEq8_neon;
+    pFuncList->sMcFuncs.pfSampleAveraging[1] = PixStrideAvgWidthEq16_neon;
+    pFuncList->sMcFuncs.pfLumaHalfpelHor = McHorVer20Width9Or17_neon;//iWidth+1:8/16
+    pFuncList->sMcFuncs.pfLumaHalfpelVer = McHorVer02Height9Or17_neon;//heigh+1:8/16
+    pFuncList->sMcFuncs.pfLumaHalfpelCen = McHorVer22Width9Or17Height9Or17_neon;//iWidth+1/heigh+1
+  }
+#endif
+#if defined(HAVE_NEON_AARCH64)
+  if (uiCpuFlag & WELS_CPU_NEON) {
+    memcpy (pFuncList->sMcFuncs.pfLumaQuarpelMc, pWelsMcFuncWidthEq16_AArch64_neon,
+            sizeof (pWelsMcFuncWidthEq16_AArch64_neon));
+    pFuncList->sMcFuncs.pfChromaMc	= EncMcChroma_AArch64_neon;
+    pFuncList->sMcFuncs.pfSampleAveraging[0] = PixStrideAvgWidthEq8_AArch64_neon;
+    pFuncList->sMcFuncs.pfSampleAveraging[1] = PixStrideAvgWidthEq16_AArch64_neon;
+    pFuncList->sMcFuncs.pfLumaHalfpelHor = McHorVer20Width9Or17_AArch64_neon;//iWidth+1:8/16
+    pFuncList->sMcFuncs.pfLumaHalfpelVer = McHorVer02Height9Or17_AArch64_neon;//heigh+1:8/16
+    pFuncList->sMcFuncs.pfLumaHalfpelCen = McHorVer22Width9Or17Height9Or17_AArch64_neon;//iWidth+1/heigh+1
+  }
+#endif
 }
 }

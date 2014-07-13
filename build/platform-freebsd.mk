@@ -1,12 +1,12 @@
-include build/platform-x86-common.mk
-ASM = nasm
+include build/platform-arch.mk
 SHAREDLIBSUFFIX = so
-CFLAGS += -fPIC -DMT_ENABLED
+CFLAGS += -fPIC
 LDFLAGS += -lpthread
-ASMFLAGS += -DNOPREFIX
+ifeq ($(ASM_ARCH), x86)
 ifeq ($(ENABLE64BIT), Yes)
 ASMFLAGS += -f elf64
 else
 ASMFLAGS += -f elf
+endif
 endif
 

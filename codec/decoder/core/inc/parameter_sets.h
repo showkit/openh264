@@ -40,15 +40,15 @@
 namespace WelsDec {
 
 typedef struct TagLevelLimits {
-  int32_t iMaxMBPS; // Max macroblock processing rate(MB/s)
-  int32_t iMaxFS;   // Max frame sizea(MBs)
-  int32_t iMaxDPBMbs;// Max decoded picture buffer size(MBs)
-  int32_t iMaxBR; // Max video bit rate
-  int32_t iMaxCPB; // Max CPB size
-  int16_t iMinVmv; // Vertical MV component range upper bound
-  int16_t iMaxVmv; // Vertical MV component range lower bound
-  int16_t iMinCR;  // Min compression ration
-  int16_t iMaxMvsPer2Mb; // Max number of motion vectors per two consecutive MBs
+int32_t iMaxMBPS; // Max macroblock processing rate(MB/s)
+int32_t iMaxFS;   // Max frame sizea(MBs)
+int32_t iMaxDPBMbs;// Max decoded picture buffer size(MBs)
+int32_t iMaxBR; // Max video bit rate
+int32_t iMaxCPB; // Max CPB size
+int16_t iMinVmv; // Vertical MV component range upper bound
+int16_t iMaxVmv; // Vertical MV component range lower bound
+int16_t iMinCR;  // Min compression ration
+int16_t iMaxMvsPer2Mb; // Max number of motion vectors per two consecutive MBs
 } SLevelLimits;
 
 /* Sequence Parameter Set, refer to Page 57 in JVT X201wcm */
@@ -99,7 +99,7 @@ bool		bSeparateColorPlaneFlag;
 bool		bQpPrimeYZeroTransfBypassFlag;
 bool		bSeqScalingMatrixPresentFlag;
 bool		bSeqScalingListPresentFlag[12];
-const SLevelLimits *pSLevelLimits;
+const SLevelLimits* pSLevelLimits;
 } SSps, *PSps;
 
 

@@ -42,13 +42,13 @@
 
 #include "encoder_context.h"
 
-namespace WelsSVCEnc {
+namespace WelsEnc {
 /*!
  * \brief	request specific memory for SVC
  * \param	pEncCtx		sWelsEncCtx*
  * \return	successful - 0; otherwise none 0 for failed
  */
-int32_t RequestMemorySvc (sWelsEncCtx** ppCtx);
+int32_t RequestMemorySvc (sWelsEncCtx** ppCtx, SExistingParasetList* pExistingParasetList);
 
 /*!
  * \brief	free memory	in SVC core encoder
@@ -70,7 +70,7 @@ int32_t AllocateBsOutputBuffer (CMemoryAlign* pMa, const int32_t iNeededLen, int
  * \param	pEncCtx		sWelsEncCtx*
  * \return	successful - 0; otherwise none 0 for failed
  */
-int32_t InitFunctionPointers (SWelsFuncPtrList* pFuncList, SWelsSvcCodingParam* _param, uint32_t  uiCpuFlag);
+int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* _param, uint32_t  uiCpuFlag);
 
 ///*!
 // * \brief	decide frame type (IDR/P frame)
@@ -91,12 +91,12 @@ int32_t GetTemporalLevel (SSpatialLayerInternal* fDlp, const int32_t kiFrameNum,
  * \brief	Dump reconstruction for dependency layer
  */
 
-extern "C" void DumpDependencyRec (SPicture* pSrcPic, const char* kpFileName, const int8_t kiDid, bool bAppend);
+extern "C" void DumpDependencyRec (SPicture* pSrcPic, const char* kpFileName, const int8_t kiDid, bool bAppend, SDqLayer* pDqLayer);
 
 /*!
  * \brief	Dump the reconstruction pictures
  */
-void DumpRecFrame (SPicture* pSrcPic, const char* kpFileName, bool bAppend);
+void DumpRecFrame (SPicture* pSrcPic, const char* kpFileName, const int8_t kiDid, bool bAppend, SDqLayer* pDqLayer);
 
 
 /*!

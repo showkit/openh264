@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
 #include "macros.h"
 #include "decode_mb_aux.h"
+#include "deblocking.h"
+#include "cpu.h"
 using namespace WelsDec;
 void IdctResAddPred_ref (uint8_t* pPred, const int32_t kiStride, int16_t* pRs) {
   int16_t iSrc[16];
@@ -39,7 +41,15 @@ void IdctResAddPred_ref (uint8_t* pPred, const int32_t kiStride, int16_t* pRs) {
   }
 }
 
-#define GENERATE_IDCTRESADDPRED(pred) \
+void SetNonZeroCount_ref (int8_t* pNonZeroCount) {
+  int32_t i;
+
+  for (i = 0; i < 24; i++) {
+    pNonZeroCount[i] = !!pNonZeroCount[i];
+  }
+}
+
+#define GENERATE_IDCTRESADDPRED(pred, flag) \
 TEST(DecoderDecodeMbAux, pred) {\
   const int32_t kiStride = 32;\
   const int iBits = 12;\
@@ -50,6 +60,9 @@ TEST(DecoderDecodeMbAux, pred) {\
   int16_t iRefRS[16];\
   uint8_t uiRefPred[16*kiStride];\
   int32_t iRunTimes = 1000;\
+  uint32_t uiCPUFlags = WelsCPUFeatureDetect(NULL); \
+  if ((uiCPUFlags & flag) == 0 && flag != 0) \
+    return; \
   while(iRunTimes--) {\
     for(int i = 0; i < 4; i++)\
       for(int j = 0; j < 4; j++)\
@@ -71,11 +84,62 @@ TEST(DecoderDecodeMbAux, pred) {\
   }\
 }
 
-GENERATE_IDCTRESADDPRED (IdctResAddPred_c)
+GENERATE_IDCTRESADDPRED (IdctResAddPred_c, 0)
 #if defined(X86_ASM)
-GENERATE_IDCTRESADDPRED (IdctResAddPred_mmx)
+GENERATE_IDCTRESADDPRED (IdctResAddPred_mmx, WELS_CPU_MMXEXT)
 #endif
 
 #if defined(HAVE_NEON)
-GENERATE_IDCTRESADDPRED (IdctResAddPred_neon)
+GENERATE_IDCTRESADDPRED (IdctResAddPred_neon, WELS_CPU_NEON)
+#endif
+
+#if defined(HAVE_NEON_AARCH64)
+GENERATE_IDCTRESADDPRED (IdctResAddPred_AArch64_neon, WELS_CPU_NEON)
+#endif
+
+#define GENERATE_SETNONZEROCOUNT(method, flag) \
+TEST(DecoderDecodeMbAux, method) \
+{\
+    uint32_t uiCPUFlags = WelsCPUFeatureDetect(NULL); \
+    if ((uiCPUFlags & flag) == 0 && flag != 0) \
+        return; \
+    int8_t iNonZeroCount[2][24];\
+    for(int32_t i = 0; i < 24; i++) {\
+        iNonZeroCount[0][i] = iNonZeroCount[1][i] = (rand() % 25);\
+    }\
+    method(iNonZeroCount[0]);\
+    SetNonZeroCount_ref(iNonZeroCount[1]);\
+    for(int32_t i =0; i<24; i++) {\
+        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
+    }\
+    for(int32_t i =0; i<24; i++) {\
+        iNonZeroCount[0][i] = iNonZeroCount[1][i] = 0;\
+    }\
+    method(iNonZeroCount[0]);\
+    SetNonZeroCount_ref(iNonZeroCount[1]);\
+    for(int32_t i =0; i<24; i++) {\
+        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
+    }\
+    for(int32_t i =0; i<24; i++) {\
+        iNonZeroCount[0][i] = iNonZeroCount[1][i] = 16;\
+    }\
+    method(iNonZeroCount[0]);\
+    SetNonZeroCount_ref(iNonZeroCount[1]);\
+    for(int32_t i =0; i<24; i++) {\
+        ASSERT_EQ (iNonZeroCount[0][i], iNonZeroCount[1][i]);\
+    }\
+}
+
+GENERATE_SETNONZEROCOUNT (WelsNonZeroCount_c, 0)
+
+#if defined(X86_ASM)
+GENERATE_SETNONZEROCOUNT (WelsNonZeroCount_sse2, WELS_CPU_SSE2)
+#endif
+
+#if defined(HAVE_NEON)
+GENERATE_SETNONZEROCOUNT (WelsNonZeroCount_neon, WELS_CPU_NEON)
+#endif
+
+#if defined(HAVE_NEON_AARCH64)
+GENERATE_SETNONZEROCOUNT (WelsNonZeroCount_AArch64_neon, WELS_CPU_NEON)
 #endif

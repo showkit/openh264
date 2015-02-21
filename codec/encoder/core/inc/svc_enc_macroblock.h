@@ -39,7 +39,7 @@
 #include "wels_common_basis.h"
 #include "macros.h"
 
-namespace WelsSVCEnc {
+namespace WelsEnc {
 
 //struct Mb_s;
 
@@ -50,9 +50,9 @@ typedef struct TagMB {
 /*************************mb_layer() syntax and generated********************************/
 /*mb_layer():*/
 Mb_Type		uiMbType;	// including MB detailed partition type, number and type of reference list
-int16_t		iMbXY;		// offset position of MB top left point based
-int16_t		iMbX;		// position of MB in horizontal axis
-int16_t		iMbY;		// position of MB in vertical axis
+int32_t		iMbXY;		// offset position of MB top left point based
+int16_t		iMbX;		// position of MB in horizontal axis [0..32767]
+int16_t		iMbY;		// position of MB in vertical axis [0..32767]
 
 uint8_t		uiNeighborAvail;	// avail && same_slice: LEFT_MB_POS:0x01, TOP_MB_POS:0x02, TOPRIGHT_MB_POS = 0x04 ,TOPLEFT_MB_POS = 0x08;
 uint8_t		uiCbp;
@@ -68,8 +68,12 @@ SMVUnitXY	sP16x16Mv;
 
 uint8_t		uiLumaQp;		// uiLumaQp: pPps->iInitialQp + sSliceHeader->delta_qp + mb->dquant.
 uint8_t		uiChromaQp;
-uint8_t		uiSliceIdc;	// AVC: pFirstMbInSlice?; SVC: (pFirstMbInSlice << 7) | ((uiDependencyId << 4) | uiQualityId);
-uint8_t		reserved_filling_bytes[1];	// filling bytes reserved to make structure aligned with 4 bytes, higher cache hit on less structure size by 2 cache lines( 2 * 64 bytes) once hit
+uint16_t		uiSliceIdc;	// 2^16=65536 > MaxFS(36864) of level 5.1; AVC: pFirstMbInSlice?; SVC: (pFirstMbInSlice << 7) | ((uiDependencyId << 4) | uiQualityId);
+uint32_t    uiChromPredMode;
+int32_t     iLumaDQp;
+SMVUnitXY   sMvd[4];
+int32_t     iCbpDc;
+//uint8_t		reserved_filling_bytes[1];	// not deleting this line for further changes of this structure. filling bytes reserved to make structure aligned with 4 bytes, higher cache hit on less structure size by 2 cache lines( 2 * 64 bytes) once hit
 } SMB, *PMb;
 
 }

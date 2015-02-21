@@ -84,7 +84,7 @@
 
 #include <iostream>
 using namespace std;
-using namespace WelsSVCEnc;
+using namespace WelsEnc;
 
 /*
  *	Layer Context
@@ -109,7 +109,7 @@ static int     g_iCtrlC = 0;
 static void    SigIntHandler (int a) {
   g_iCtrlC = 1;
 }
-static int     g_LevelSetting = -1;
+static int     g_LevelSetting = WELS_LOG_ERROR;
 
 int ParseLayerConfig (CReadConfig& cRdLayerCfg, const int iLayer, SEncParamExt& pSvcParam, SFilesSet& sFileSet) {
   if (!cRdLayerCfg.ExistFile()) {
@@ -232,12 +232,34 @@ int ParseConfig (CReadConfig& cRdCfg, SSourcePicture* pSrcPic, SEncParamExt& pSv
         pSvcParam.uiIntraPeriod	= atoi (strTag[1].c_str());
       } else if (strTag[0].compare ("MaxNalSize") == 0) {
         pSvcParam.uiMaxNalSize = atoi (strTag[1].c_str());
-      } else if (strTag[0].compare ("EnableSpsPpsIDAddition") == 0) {
-        pSvcParam.bEnableSpsPpsIdAddition	= atoi (strTag[1].c_str()) ? true : false;
+      } else if (strTag[0].compare ("SpsPpsIDStrategy") == 0) {
+        int32_t iValue	= atoi (strTag[1].c_str());
+        switch (iValue) {
+          case 0:
+            pSvcParam.eSpsPpsIdStrategy  = CONSTANT_ID;
+            break;
+          case 0x01:
+            pSvcParam.eSpsPpsIdStrategy  = INCREASING_ID;
+            break;
+          case 0x02:
+            pSvcParam.eSpsPpsIdStrategy  = SPS_LISTING;
+            break;
+          case 0x03:
+            pSvcParam.eSpsPpsIdStrategy  = SPS_LISTING_AND_PPS_INCREASING;
+            break;
+          case 0x06:
+            pSvcParam.eSpsPpsIdStrategy  = SPS_PPS_LISTING;
+            break;
+          default:
+            pSvcParam.eSpsPpsIdStrategy  = CONSTANT_ID;
+            break;
+        }
       } else if (strTag[0].compare ("EnableScalableSEI") == 0) {
         pSvcParam.bEnableSSEI	= atoi (strTag[1].c_str()) ? true : false;
       } else if (strTag[0].compare ("EnableFrameCropping") == 0) {
         pSvcParam.bEnableFrameCroppingFlag = (atoi (strTag[1].c_str()) != 0);
+      } else if (strTag[0].compare ("EntropyCodingModeFlag") == 0) {
+        pSvcParam.iEntropyCodingModeFlag = (atoi (strTag[1].c_str()) != 0);
       } else if (strTag[0].compare ("LoopFilterDisableIDC") == 0) {
         pSvcParam.iLoopFilterDisableIdc	= (int8_t)atoi (strTag[1].c_str());
         if (pSvcParam.iLoopFilterDisableIdc > 6 || pSvcParam.iLoopFilterDisableIdc < 0) {
@@ -294,6 +316,8 @@ int ParseConfig (CReadConfig& cRdCfg, SSourcePicture* pSrcPic, SEncParamExt& pSv
         pSvcParam.iLTRRefNum = atoi (strTag[1].c_str());
       } else if (strTag[0].compare ("LtrMarkPeriod") == 0) {
         pSvcParam.iLtrMarkPeriod	= (uint32_t)atoi (strTag[1].c_str());
+      } else if (strTag[0].compare ("LosslessLink") == 0) {
+        pSvcParam.bIsLosslessLink	= atoi (strTag[1].c_str()) ? true : false;
       } else if (strTag[0].compare ("NumLayers") == 0) {
         pSvcParam.iSpatialLayerNum	= (int8_t)atoi (strTag[1].c_str());
         if (pSvcParam.iSpatialLayerNum > MAX_DEPENDENCY_LAYER || pSvcParam.iSpatialLayerNum <= 0) {
@@ -348,10 +372,11 @@ void PrintHelp() {
   printf ("  -sw     the source width\n");
   printf ("  -sh     the source height\n");
   printf ("  -frms   Number of total frames to be encoded\n");
-  printf ("  -gop    GOPSize - GOP size (1,2,4,8, default: 1)\n");
+  printf ("  -numtl  Temporal layer number (default: 1)\n");
   printf ("  -iper   Intra period (default: -1) : must be a power of 2 of GOP size (or -1)\n");
   printf ("  -nalsize the Maximum NAL size. which should be larger than the each layer slicesize when slice mode equals to SM_DYN_SLICE\n");
   printf ("  -spsid   Enable id adding in SPS/PPS per IDR \n");
+  printf ("  -cabac  Entropy coding mode(0:cavlc 1:cabac \n");
   printf ("  -denois Control denoising  (default: 0)\n");
   printf ("  -scene  Control scene change detection (default: 0)\n");
   printf ("  -bgd    Control background detection (default: 0)\n");
@@ -382,7 +407,7 @@ void PrintHelp() {
 
 int ParseCommandLine (int argc, char** argv, SSourcePicture* pSrcPic, SEncParamExt& pSvcParam, SFilesSet& sFileSet) {
   char* pCommand = NULL;
-  SLayerPEncCtx sLayerCtx[3];
+  SLayerPEncCtx sLayerCtx[MAX_SPATIAL_LAYER_NUM];
   int n = 0;
   string str_ ("SlicesAssign");
 
@@ -415,8 +440,31 @@ int ParseCommandLine (int argc, char** argv, SSourcePicture* pSrcPic, SEncParamE
     else if (!strcmp (pCommand, "-nalsize") && (n < argc))
       pSvcParam.uiMaxNalSize = atoi (argv[n++]);
 
-    else if (!strcmp (pCommand, "-spsid") && (n < argc))
-      pSvcParam.bEnableSpsPpsIdAddition = atoi (argv[n++]) ? true : false;
+    else if (!strcmp (pCommand, "-spsid") && (n < argc)) {
+      int32_t iValue = atoi (argv[n++]);
+      switch (iValue) {
+        case 0:
+          pSvcParam.eSpsPpsIdStrategy  = CONSTANT_ID;
+          break;
+        case 0x01:
+          pSvcParam.eSpsPpsIdStrategy  = INCREASING_ID;
+          break;
+        case 0x02:
+          pSvcParam.eSpsPpsIdStrategy  = SPS_LISTING;
+          break;
+        case 0x03:
+          pSvcParam.eSpsPpsIdStrategy  = SPS_LISTING_AND_PPS_INCREASING;
+          break;
+        case 0x06:
+          pSvcParam.eSpsPpsIdStrategy  = SPS_PPS_LISTING;
+          break;
+        default:
+          pSvcParam.eSpsPpsIdStrategy  = CONSTANT_ID;
+          break;
+      }
+    }
+    else if (!strcmp (pCommand, "-cabac") && (n < argc))
+      pSvcParam.iEntropyCodingModeFlag = atoi (argv[n++]);
 
     else if (!strcmp (pCommand, "-denois") && (n < argc))
       pSvcParam.bEnableDenoise = atoi (argv[n++]) ? true : false;
@@ -572,7 +620,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.iPicWidth		= 1280;			// width of picture in samples
   sParam.iPicHeight	= 720;			// height of picture in samples
   sParam.iTargetBitrate = 2500000;		// target bitrate desired
-  sParam.iMaxBitrate    = MAX_BIT_RATE;
+  sParam.iMaxBitrate    = UNSPECIFIED_BIT_RATE;
   sParam.iRCMode       = RC_QUALITY_MODE;       //  rc mode control
   sParam.iTemporalLayerNum = 3;	// layer number at temporal level
   sParam.iSpatialLayerNum	= 4;	// layer number at spatial level
@@ -583,7 +631,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.bEnableLongTermReference  = 0; // long term reference control
   sParam.iLtrMarkPeriod = 30;
   sParam.uiIntraPeriod		= 320;		// period of Intra frame
-  sParam.bEnableSpsPpsIdAddition = 1;
+  sParam.eSpsPpsIdStrategy = INCREASING_ID;
   sParam.bPrefixNalAddingCtrl = 0;
   sParam.iComplexityMode = MEDIUM_COMPLEXITY;
   int iIndexLayer = 0;
@@ -592,7 +640,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.sSpatialLayers[iIndexLayer].iVideoHeight	= 90;
   sParam.sSpatialLayers[iIndexLayer].fFrameRate	= 7.5f;
   sParam.sSpatialLayers[iIndexLayer].iSpatialBitrate		= 64000;
-  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = MAX_BIT_RATE;
+  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = UNSPECIFIED_BIT_RATE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
 
   ++ iIndexLayer;
@@ -601,7 +649,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.sSpatialLayers[iIndexLayer].iVideoHeight	= 180;
   sParam.sSpatialLayers[iIndexLayer].fFrameRate	= 15.0f;
   sParam.sSpatialLayers[iIndexLayer].iSpatialBitrate		= 160000;
-  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = MAX_BIT_RATE;
+  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = UNSPECIFIED_BIT_RATE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
 
   ++ iIndexLayer;
@@ -610,7 +658,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.sSpatialLayers[iIndexLayer].iVideoHeight	= 360;
   sParam.sSpatialLayers[iIndexLayer].fFrameRate	= 30.0f;
   sParam.sSpatialLayers[iIndexLayer].iSpatialBitrate		= 512000;
-  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = MAX_BIT_RATE;
+  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = UNSPECIFIED_BIT_RATE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.sSliceArgument.uiSliceNum = 1;
 
@@ -620,7 +668,7 @@ int FillSpecificParameters (SEncParamExt& sParam) {
   sParam.sSpatialLayers[iIndexLayer].iVideoHeight	= 720;
   sParam.sSpatialLayers[iIndexLayer].fFrameRate	= 30.0f;
   sParam.sSpatialLayers[iIndexLayer].iSpatialBitrate		= 1500000;
-  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = MAX_BIT_RATE;
+  sParam.sSpatialLayers[iIndexLayer].iMaxSpatialBitrate     = UNSPECIFIED_BIT_RATE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.uiSliceMode = SM_SINGLE_SLICE;
   sParam.sSpatialLayers[iIndexLayer].sSliceCfg.sSliceArgument.uiSliceNum = 1;
 
@@ -659,7 +707,7 @@ int ProcessEncoding (ISVCEncoder* pPtrEnc, int argc, char** argv, bool bConfigFi
   FILE* fpGolden = NULL;
 #endif
 #if defined ( STICK_STREAM_SIZE )
-  FILE* fTrackStream = fopen ("coding_size.stream", "wb");;
+  FILE* fTrackStream = fopen ("coding_size.stream", "wb");
 #endif
   SFilesSet fs;
   // for configuration file
@@ -702,9 +750,7 @@ int ProcessEncoding (ISVCEncoder* pPtrEnc, int argc, char** argv, bool bConfigFi
     iRet = 1;
     goto INSIDE_MEM_FREE;
   }
-  if (g_LevelSetting >= 0) {
-    pPtrEnc->SetOption (ENCODER_OPTION_TRACE_LEVEL, &g_LevelSetting);
-  }
+  pPtrEnc->SetOption (ENCODER_OPTION_TRACE_LEVEL, &g_LevelSetting);
   //finish reading the configurations
   iSourceWidth = pSrcPic->iPicWidth;
   iSourceHeight = pSrcPic->iPicHeight;
@@ -805,10 +851,10 @@ int ProcessEncoding (ISVCEncoder* pPtrEnc, int argc, char** argv, bool bConfigFi
       break;
     // To encoder this frame
     iStart	= WelsTime();
+    pSrcPic->uiTimeStamp = WELS_ROUND (iFrameIdx * (1000 / sSvcParam.fMaxFrameRate));
     int iEncFrames = pPtrEnc->EncodeFrame (pSrcPic, &sFbi);
     iTotal += WelsTime() - iStart;
-
-    // fixed issue in case dismatch source picture introduced by frame skipped, 1/12/2010
+    ++ iFrameIdx;
     if (videoFrameTypeSkip == sFbi.eFrameType) {
       continue;
     }
@@ -859,7 +905,6 @@ int ProcessEncoding (ISVCEncoder* pPtrEnc, int argc, char** argv, bool bConfigFi
       fprintf (stderr, "EncodeFrame(), ret: %d, frame index: %d.\n", iEncFrames, iFrameIdx);
     }
 
-    ++ iFrameIdx;
   }
 
   if (iActualFrameEncodedCount > 0) {
@@ -891,7 +936,7 @@ INSIDE_MEM_FREE:
     pFileYUV = NULL;
   }
   if (pYUV) {
-    delete pYUV;
+    delete[] pYUV;
     pYUV = NULL;
   }
   if (pSrcPic) {

@@ -31,36 +31,19 @@
  */
 
 //wels_const.h
-#ifndef WELS_CONSTANCE_H__
-#define WELS_CONSTANCE_H__
+#ifndef WELS_CONST_H__
+#define WELS_CONST_H__
 
 #include "as264_common.h"	//  to communicate with specific macros there, 3/18/2010
 #include "codec_app_def.h"
+#include "wels_const_common.h"
 
 /* To control number of spatial, quality and temporal layers constraint by application layer? */
 #define NUM_SPATIAL_LAYERS_CONSTRAINT
 #define NUM_QUALITY_LAYERS_CONSTRAINT
 
 
-// Miscellaneous sizing infos
-#ifndef MAX_FNAME_LEN
-#define MAX_FNAME_LEN		256	// maximal length of file name in char size
-#endif//MAX_FNAME_LEN
-
-#ifndef WELS_LOG_BUF_SIZE
-#define WELS_LOG_BUF_SIZE	4096
-#endif//WELS_LOG_BUF_SIZE
-
-#ifndef MAX_TRACE_LOG_SIZE
-#define MAX_TRACE_LOG_SIZE	(50 * (1<<20))	// max trace log size: 50 MB, overwrite occur if log file size exceeds this size
-#endif//MAX_TRACE_LOG_SIZE
-
-/* MB width in pixels for specified colorspace I420 usually used in codec */
-#define MB_WIDTH_LUMA		16
-#define MB_WIDTH_CHROMA		(MB_WIDTH_LUMA>>1)
-/* MB height in pixels for specified colorspace I420 usually used in codec */
-#define MB_HEIGHT_LUMA		16
-#define MB_HEIGHT_CHROMA	(MB_HEIGHT_LUMA>>1)
+#define STATISTICS_LOG_INTERVAL_MS (5000) // output statistics log every 5s
 
 /* Some list size */
 #define MB_COEFF_LIST_SIZE	(256+((MB_WIDTH_CHROMA*MB_HEIGHT_CHROMA)<<1))
@@ -123,8 +106,10 @@
 #endif//PPS_BUFFER_SIZE
 
 #if !defined(MAX_MACROBLOCK_SIZE_IN_BYTE)
-#define MAX_MACROBLOCK_SIZE_IN_BYTE		800 //3200*2/8
+#define MAX_MACROBLOCK_SIZE_IN_BYTE		400 //3200/8, 3200 is from Annex A.3.1.(n)
 #endif
+
+#define MAX_MACROBLOCK_SIZE_IN_BYTE_x2 (MAX_MACROBLOCK_SIZE_IN_BYTE<<1)
 
 #if defined(NUM_SPATIAL_LAYERS_CONSTRAINT)
 #define MAX_DEPENDENCY_LAYER		MAX_SPATIAL_LAYER_NUM	// Maximal dependency layer
@@ -149,7 +134,6 @@
 #define MAX_SHORT_REF_COUNT		(MAX_GOP_SIZE>>1) // 16 in standard, maximal count number of short reference pictures
 #define LONG_TERM_REF_NUM       2
 #define LONG_TERM_REF_NUM_SCREEN 4
-#define MAX_LONG_REF_COUNT		2 // 16 in standard, maximal count number of long reference pictures
 #define MAX_REF_PIC_COUNT		16 // 32 in standard, maximal Short + Long reference pictures
 #define MIN_REF_PIC_COUNT		1		// minimal count number of reference pictures, 1 short + 2 key reference based?
 #define MAX_MULTI_REF_PIC_COUNT	1	//maximum multi-reference number
@@ -159,7 +143,8 @@
 // adjusted numbers reference picture functionality related definition
 #define MAX_REFERENCE_MMCO_COUNT_NUM		4	// adjusted MAX_MMCO_COUNT(66 in standard) definition per encoder design
 #define MAX_REFERENCE_REORDER_COUNT_NUM		2	// adjusted MAX_REF_PIC_COUNT(32 in standard) for reference reordering definition per encoder design
-#define MAX_REFERENCE_PICTURE_COUNT_NUM		(MAX_SHORT_REF_COUNT+MAX_LONG_REF_COUNT)	// <= MAX_REF_PIC_COUNT, memory saved if <
+#define MAX_REFERENCE_PICTURE_COUNT_NUM_CAMERA		(MAX_SHORT_REF_COUNT+LONG_TERM_REF_NUM)	// <= MAX_REF_PIC_COUNT, memory saved if <
+#define MAX_REFERENCE_PICTURE_COUNT_NUM_SCREEN		(MAX_SHORT_REF_COUNT+LONG_TERM_REF_NUM_SCREEN)	// <= MAX_REF_PIC_COUNT, memory saved if <
 
 #define BASE_QUALITY_ID			0
 #define BASE_DEPENDENCY_ID		0
@@ -169,6 +154,7 @@
 
 #define UNAVAILABLE_DQ_ID		((uint8_t)(-1))
 #define LAYER_NUM_EXCHANGEABLE	2
+#define INVALID_ID		(-1)
 
 #define NAL_HEADER_ADD_0X30BYTES 50
 
@@ -189,6 +175,12 @@ BLOCK_4x4   = 4,
 BLOCK_SIZE_ALL = 5
 };
 
+typedef enum {
+RECIEVE_UNKOWN = 0,
+RECIEVE_SUCCESS = 1,
+RECIEVE_FAILED = 2
+} LTR_MARKING_RECEIVE_STATE;
+
 enum {
   CUR_AU_IDX	= 0,			// index symbol for current access unit
   SUC_AU_IDX	= 1				// index symbol for successive access unit
@@ -206,4 +198,4 @@ enum {
 };
 //TODO: need to complete the return checking in encoder and fill in more types if needed
 
-#endif//WELS_CONSTANCE_H__
+#endif//WELS_CONST_H__

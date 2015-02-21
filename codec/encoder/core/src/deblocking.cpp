@@ -41,7 +41,7 @@
 #include "deblocking.h"
 #include "cpu_core.h"
 
-namespace WelsSVCEnc {
+namespace WelsEnc {
 
 #define g_kuiAlphaTable(x) g_kuiAlphaTable[(x)]
 #define g_kiBetaTable(x)  g_kiBetaTable[(x)]
@@ -774,13 +774,6 @@ void PerformDeblockingFilter (sWelsEncCtx* pEnc) {
   }
 }
 
-void WelsNonZeroCount_c (int8_t* pNonZeroCount) {
-  int32_t i;
-
-  for (i = 0; i < 24; i++) {
-    pNonZeroCount[i] = !!pNonZeroCount[i];
-  }
-}
 void WelsBlockFuncInit (PSetNoneZeroCountZeroFunc* pfSetNZCZero,  int32_t iCpu) {
   *pfSetNZCZero = WelsNonZeroCount_c;
 #ifdef	HAVE_NEON
@@ -791,6 +784,11 @@ void WelsBlockFuncInit (PSetNoneZeroCountZeroFunc* pfSetNZCZero,  int32_t iCpu) 
 #ifdef	HAVE_NEON_AARCH64
   if (iCpu & WELS_CPU_NEON) {
     *pfSetNZCZero = WelsNonZeroCount_AArch64_neon;
+  }
+#endif
+#if defined(X86_ASM)
+  if (iCpu & WELS_CPU_SSE2) {
+    *pfSetNZCZero = WelsNonZeroCount_sse2;
   }
 #endif
 }
@@ -860,5 +858,5 @@ void  DeblockingInit (DeblockingFunc*   pFunc,  int32_t iCpu) {
 }
 
 
-} // namespace WelsSVCEnc
+} // namespace WelsEnc
 

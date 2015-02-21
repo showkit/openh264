@@ -144,8 +144,7 @@ int32_t DecodeCurrentAccessUnit (PWelsDecoderContext pCtx, uint8_t** ppDst, SBuf
 /*
  * Check if frame is completed and EC is required
  */
-bool CheckAndDoEC (PWelsDecoderContext pCtx, uint8_t** pDst, SBufferInfo* pDstInfo);
-
+bool CheckAndFinishLastPic (PWelsDecoderContext pCtx, uint8_t** pDst, SBufferInfo* pDstInfo);
 /*
  *	Prepare current dq layer context initialization.
  */
@@ -158,6 +157,9 @@ void WelsDecodeAccessUnitEnd (PWelsDecoderContext pCtx);
 void ForceResetCurrentAccessUnit (PAccessUnit pAu);
 void ForceClearCurrentNal (PAccessUnit pAu);
 
+bool CheckRefPicturesComplete (PWelsDecoderContext pCtx); // Check whether all ref pictures are complete
+
+void ForceResetParaSetStatusAndAUList(PWelsDecoderContext pCtx);
 } // namespace WelsDec
 
 #endif//WELS_DECODER_CORE_H__

@@ -53,9 +53,9 @@ void BaseDecoderTest::SetUp() {
 
   SDecodingParam decParam;
   memset (&decParam, 0, sizeof (SDecodingParam));
-  decParam.iOutputColorFormat  = videoFormatI420;
+  decParam.eOutputColorFormat  = videoFormatI420;
   decParam.uiTargetDqLayer = UCHAR_MAX;
-  decParam.uiEcActiveFlag  = 1;
+  decParam.eEcActiveIdc = ERROR_CON_SLICE_COPY;
   decParam.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;
 
   rv = decoder_->Initialize (&decParam);
@@ -70,13 +70,13 @@ void BaseDecoderTest::TearDown() {
 }
 
 
-void BaseDecoderTest::DecodeFrame (const uint8_t* src, int sliceSize, Callback* cbk) {
+void BaseDecoderTest::DecodeFrame (const uint8_t* src, size_t sliceSize, Callback* cbk) {
   uint8_t* data[3];
   SBufferInfo bufInfo;
   memset (data, 0, sizeof (data));
   memset (&bufInfo, 0, sizeof (SBufferInfo));
 
-  DECODING_STATE rv = decoder_->DecodeFrame2 (src, sliceSize, data, &bufInfo);
+  DECODING_STATE rv = decoder_->DecodeFrame2 (src, (int) sliceSize, data, &bufInfo);
   ASSERT_TRUE (rv == dsErrorFree);
 
   if (bufInfo.iBufferStatus == 1 && cbk != NULL) {

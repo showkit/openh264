@@ -1,5 +1,10 @@
-include build/platform-arch.mk
+include $(SRC_PATH)build/arch.mk
+SHAREDLIB_DIR = $(PREFIX)/lib
 SHAREDLIBSUFFIX = dylib
+SHAREDLIBSUFFIXVER=$(SHAREDLIBVERSION).$(SHAREDLIBSUFFIX)
+SHLDFLAGS = -dynamiclib -twolevel_namespace -undefined dynamic_lookup \
+	-fno-common -headerpad_max_install_names -install_name \
+	$(SHAREDLIB_DIR)/$(LIBPREFIX)$(PROJECT_NAME).$(SHAREDLIBSUFFIXVER)
 SHARED = -dynamiclib
 CFLAGS += -Wall -fPIC -MMD -MP
 LDFLAGS += -lpthread

@@ -142,14 +142,14 @@ typedef enum {
 typedef enum {
   SIMILAR_SCENE,   //similar scene
   MEDIUM_CHANGED_SCENE,   //medium changed scene
-  LARGE_CHANGED_SCENE,    //large changed scene
+  LARGE_CHANGED_SCENE     //large changed scene
 } ESceneChangeIdc;
 
 typedef enum {
   NO_STATIC,  // motion block
   COLLOCATED_STATIC, // collocated static block
   SCROLLED_STATIC,  // scrolled static block
-  BLOCK_STATIC_IDC_ALL,
+  BLOCK_STATIC_IDC_ALL
 } EStaticBlockIdc;
 
 typedef struct {
@@ -163,7 +163,7 @@ typedef struct {
 typedef struct {
   ESceneChangeIdc eSceneChangeIdc; // SIMILAR_SCENE, MEDIUM_CHANGED_SCENE, LARGE_CHANGED_SCENE
   int             iMotionBlockNum; // Number of motion blocks
-  int             iFrameComplexity; // frame complexity
+  long long       iFrameComplexity; // frame complexity
   unsigned char* pStaticBlockIdc;   // static block idc
   SScrollDetectionParam sScrollResult; //results from scroll detection
 } SSceneChangeResult;
@@ -195,7 +195,7 @@ typedef struct {
 
 typedef enum {
   AQ_QUALITY_MODE,   //Quality mode
-  AQ_BITRATE_MODE,   //Bitrate mode
+  AQ_BITRATE_MODE    //Bitrate mode
 } EAQModes;
 
 typedef struct {
@@ -222,7 +222,7 @@ typedef struct {
   int  iComplexityAnalysisMode;
   int  iCalcBgd;
   int  iMbNumInGom;
-  int  iFrameComplexity;
+  long long  iFrameComplexity;
   int*  pGomComplexity;
   int*  pGomForegroundBlockNum;
   signed char*  pBackgroundMbFlag;
@@ -234,7 +234,7 @@ typedef struct {
   int  iMbRowInGom;
   int*  pGomComplexity;
   int  iGomNumInFrame;
-  int  iFrameComplexity;
+  long long  iFrameComplexity; //255*255(MaxMbSAD)*36864(MaxFS) make the highest bit of 32-bit integer 1
   int  iIdrFlag;
   SScrollDetectionParam sScrollResult;
 } SComplexityAnalysisScreenParam;
@@ -300,8 +300,8 @@ class IWelsVP {
 #endif
 
 WELSVP_EXTERNC_BEGIN
-EResult CreateVpInterface (void** ppCtx, int iVersion /*= WELSVP_INTERFACE_VERION*/);
-EResult DestroyVpInterface (void* pCtx , int iVersion /*= WELSVP_INTERFACE_VERION*/);
+EResult WelsCreateVpInterface (void** ppCtx, int iVersion /*= WELSVP_INTERFACE_VERION*/);
+EResult WelsDestroyVpInterface (void* pCtx , int iVersion /*= WELSVP_INTERFACE_VERION*/);
 WELSVP_EXTERNC_END
 
 //////////////////////////////////////////////////////////////////////////////////////////////

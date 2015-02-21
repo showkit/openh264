@@ -33,9 +33,9 @@
 #include "ComplexityAnalysis.h"
 #include "cpu.h"
 #include "macros.h"
+#include "intra_pred_common.h"
 
 WELSVP_NAMESPACE_BEGIN
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -187,9 +187,7 @@ void CComplexityAnalysis::AnalyzeGomComplexityViaSad (SPixMap* pSrcPixMap, SPixM
   int32_t*  pGomForegroundBlockNum = (int32_t*)m_sComplexityAnalysisParam.pGomForegroundBlockNum;
   int32_t*  pGomComplexity = (int32_t*)m_sComplexityAnalysisParam.pGomComplexity;
 
-
   uint32_t uiGomSad = 0, uiFrameSad = 0;
-
   InitGomSadFunc (m_pfGomSad, m_sComplexityAnalysisParam.iCalcBgd);
 
   for (int32_t j = 0; j < iGomMbNum; j ++) {
@@ -212,11 +210,9 @@ void CComplexityAnalysis::AnalyzeGomComplexityViaSad (SPixMap* pSrcPixMap, SPixM
       iMbEndIndex = WELS_MIN (iMbEndIndex + iMbWidth , iGomMbEndIndex);
 
     } while (--iGomMbRowNum);
-
     pGomComplexity[j] = uiGomSad;
     uiFrameSad += pGomComplexity[j];
   }
-
   m_sComplexityAnalysisParam.iFrameComplexity = uiFrameSad;
 }
 
@@ -237,7 +233,7 @@ void CComplexityAnalysis::AnalyzeGomComplexityViaVar (SPixMap* pSrcPixMap, SPixM
 
   SVAACalcResult* pVaaCalcResults = m_sComplexityAnalysisParam.pCalcResult;
   int32_t*  pGomComplexity = (int32_t*)m_sComplexityAnalysisParam.pGomComplexity;
-
+  uint32_t  uiFrameSad = 0;
 
   uint32_t uiSampleSum = 0, uiSquareSum = 0;
 
@@ -266,7 +262,9 @@ void CComplexityAnalysis::AnalyzeGomComplexityViaVar (SPixMap* pSrcPixMap, SPixM
     } while (--iGomMbRowNum);
 
     pGomComplexity[j] = uiSquareSum - (uiSampleSum * uiSampleSum / iGomSampleNum);
+    uiFrameSad += pGomComplexity[j];
   }
+  m_sComplexityAnalysisParam.iFrameComplexity = uiFrameSad;
 }
 
 
@@ -280,8 +278,29 @@ CComplexityAnalysisScreen::CComplexityAnalysisScreen (int32_t iCpuFlag) {
 #ifdef X86_ASM
   if (iCpuFlag & WELS_CPU_SSE2) {
     m_pSadFunc = WelsSampleSad16x16_sse2;
+    m_pIntraFunc[0] = WelsI16x16LumaPredV_sse2;
+    m_pIntraFunc[1] = WelsI16x16LumaPredH_sse2;
+
   }
 #endif
+
+#if defined (HAVE_NEON)
+  if (iCpuFlag & WELS_CPU_NEON) {
+    m_pSadFunc = WelsSampleSad16x16_neon;
+    m_pIntraFunc[0] = WelsI16x16LumaPredV_neon;
+    m_pIntraFunc[1] = WelsI16x16LumaPredH_neon;
+
+  }
+#endif
+
+#if defined (HAVE_NEON_AARCH64)
+  if (iCpuFlag & WELS_CPU_NEON) {
+    m_pSadFunc = WelsSampleSad16x16_AArch64_neon;
+    m_pIntraFunc[0] =  WelsI16x16LumaPredV_AArch64_neon;
+    m_pIntraFunc[1] = WelsI16x16LumaPredH_AArch64_neon;
+  }
+#endif
+
 }
 
 CComplexityAnalysisScreen::~CComplexityAnalysisScreen() {
@@ -303,7 +322,7 @@ EResult CComplexityAnalysisScreen::Process (int32_t nType, SPixMap* pSrc, SPixMa
   } else if (!bScrollFlag || ((iScrollMvX == 0) && (iScrollMvY == 0))) {
     GomComplexityAnalysisInter (pSrc, pRef, 0);
   } else {
-    GomComplexityAnalysisInter (pSrc, pRef, 1);;
+    GomComplexityAnalysisInter (pSrc, pRef, 1);
   }
 
   return RET_SUCCESS;

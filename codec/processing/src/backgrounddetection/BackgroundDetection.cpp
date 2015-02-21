@@ -57,7 +57,7 @@ CBackgroundDetection::CBackgroundDetection (int32_t iCpuFlag) {
 }
 
 CBackgroundDetection::~CBackgroundDetection() {
-  FreeOUArrayMemory();
+  WelsFree (m_BgdParam.pOU_array);
 }
 
 EResult CBackgroundDetection::Process (int32_t iType, SPixMap* pSrcPixMap, SPixMap* pRefPixMap) {
@@ -80,7 +80,7 @@ EResult CBackgroundDetection::Process (int32_t iType, SPixMap* pSrcPixMap, SPixM
 
   int32_t iCurFrameSize = m_BgdParam.iBgdWidth * m_BgdParam.iBgdHeight;
   if (m_BgdParam.pOU_array == NULL || iCurFrameSize > m_iLargestFrameSize) {
-    FreeOUArrayMemory();
+    WelsFree (m_BgdParam.pOU_array);
     m_BgdParam.pOU_array = AllocateOUArrayMemory (m_BgdParam.iBgdWidth, m_BgdParam.iBgdHeight);
     m_iLargestFrameSize = iCurFrameSize;
   }
@@ -110,10 +110,6 @@ inline SBackgroundOU* CBackgroundDetection::AllocateOUArrayMemory (int32_t iWidt
   int32_t	iMaxOUWidth	= (BGD_OU_SIZE - 1 + iWidth) >> LOG2_BGD_OU_SIZE;
   int32_t	iMaxOUHeight	= (BGD_OU_SIZE - 1 + iHeight) >> LOG2_BGD_OU_SIZE;
   return (SBackgroundOU*)WelsMalloc (iMaxOUWidth * iMaxOUHeight * sizeof (SBackgroundOU));
-}
-
-inline void CBackgroundDetection::FreeOUArrayMemory() {
-  _SafeFree (m_BgdParam.pOU_array);
 }
 
 void CBackgroundDetection::GetOUParameters (SVAACalcResult* sVaaCalcInfo, int32_t iMbIndex, int32_t iMbWidth,
@@ -344,7 +340,6 @@ void CBackgroundDetection::ForegroundDilationAndBackgroundErosion (vBGDParam* pB
   int8_t*	pVaaBackgroundMbFlag   = (int8_t*)pBgdParam->pBackgroundMbFlag;
   SBackgroundOU*	pOUNeighbours[4];//0: left; 1: right; 2: top; 3: bottom
 
-  pBackgroundOU	= pBgdParam->pOU_array;
   pOUNeighbours[2]	= pBackgroundOU;//top OU
   for (int32_t j = 0; j < iPicHeightInOU; j ++) {
     int8_t* pRowSkipFlag = pVaaBackgroundMbFlag;

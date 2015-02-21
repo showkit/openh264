@@ -31,28 +31,10 @@
  */
 
 //wels_const.h
-#ifndef WELS_CONSTANCE_H__
-#define WELS_CONSTANCE_H__
+#ifndef WELS_CONST_H__
+#define WELS_CONST_H__
 
-// Miscellaneous sizing infos
-#ifndef MAX_FNAME_LEN
-#define MAX_FNAME_LEN		256	// maximal length of file name in char size
-#endif//MAX_FNAME_LEN
-
-#ifndef WELS_LOG_BUF_SIZE
-#define WELS_LOG_BUF_SIZE	4096
-#endif//WELS_LOG_BUF_SIZE
-
-#ifndef MAX_TRACE_LOG_SIZE
-#define MAX_TRACE_LOG_SIZE	(50 * (1<<20))	// max trace log size: 50 MB, overwrite occur if log file size exceeds this size
-#endif//MAX_TRACE_LOG_SIZE
-
-/* MB width in pixels for specified colorspace I420 usually used in codec */
-#define MB_WIDTH_LUMA		16
-#define MB_WIDTH_CHROMA		(MB_WIDTH_LUMA>>1)
-/* MB height in pixels for specified colorspace I420 usually used in codec */
-#define MB_HEIGHT_LUMA		16
-#define MB_HEIGHT_CHROMA	(MB_HEIGHT_LUMA>>1)
+#include "wels_const_common.h"
 
 /* Some list size */
 #define MB_COEFF_LIST_SIZE	(256+((MB_WIDTH_CHROMA*MB_HEIGHT_CHROMA)<<1))
@@ -96,4 +78,10 @@
 #define MAX_ACCESS_UNIT_CAPACITY 7077888 //Maximum AU size in bytes for level 5.2 for single frame
 #define MAX_MACROBLOCK_CAPACITY 5000 //Maximal legal MB capacity, 15000 bits is enough
 
-#endif//WELS_CONSTANCE_H__
+enum {
+    BASE_MB = 0,
+    NON_AVC_REWRITE_ENHANCE_MB =1,
+    AVC_REWRITE_ENHANCE_MB = 2
+};
+
+#endif//WELS_CONST_H__

@@ -39,7 +39,7 @@
  */
 
 #include "fmo.h"
-#include "mem_align.h"
+#include "memory_align.h"
 
 namespace WelsDec {
 
@@ -90,7 +90,7 @@ static inline int32_t FmoGenerateMbAllocMapType0 (PFmo pFmo, PPps pPps) {
 static inline int32_t FmoGenerateMbAllocMapType1 (PFmo pFmo, PPps pPps, const int32_t kiMbWidth) {
   uint32_t uiNumSliceGroups = 0;
   int32_t iMbNum = 0;
-  int16_t i = 0;
+  int32_t i = 0;
   WELS_VERIFY_RETURN_IF (1, (NULL == pFmo || NULL == pPps))
   uiNumSliceGroups = pPps->uiNumSliceGroups;
   iMbNum			 = pFmo->iCountMbNum;
@@ -133,7 +133,7 @@ static inline int32_t FmoGenerateSliceGroup (PFmo pFmo, const PPps kpPps, const 
 
 
   WelsFree (pFmo->pMbAllocMap, "_fmo->pMbAllocMap");
-  pFmo->pMbAllocMap	= (uint8_t*)WelsMalloc (iNumMb * sizeof (uint8_t), "_fmo->pMbAllocMap");
+  pFmo->pMbAllocMap	= (uint8_t*)WelsMallocz (iNumMb * sizeof (uint8_t), "_fmo->pMbAllocMap");
   WELS_VERIFY_RETURN_IF (1, (NULL == pFmo->pMbAllocMap))	// out of memory
 
   pFmo->iCountMbNum	= iNumMb;

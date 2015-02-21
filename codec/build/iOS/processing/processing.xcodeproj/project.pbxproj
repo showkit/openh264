@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4CC6094F197E009D00BE8B8B /* down_sample_aarch64_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 4CC6094E197E009D00BE8B8B /* down_sample_aarch64_neon.S */; };
+		4CC6095A1980F34F00BE8B8B /* vaa_calc_aarch64_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 4CC609591980F34F00BE8B8B /* vaa_calc_aarch64_neon.S */; };
+		4CD0FE36199082AD00375C9A /* pixel_sad_aarch64_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 4CD0FE35199082AD00375C9A /* pixel_sad_aarch64_neon.S */; };
 		54994780196A3F3900BA3D87 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5499477F196A3F3900BA3D87 /* Foundation.framework */; };
 		549947DF196A3FB400BA3D87 /* AdaptiveQuantization.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947A9196A3FB400BA3D87 /* AdaptiveQuantization.cpp */; };
 		549947E0196A3FB400BA3D87 /* adaptive_quantization.S in Sources */ = {isa = PBXBuildFile; fileRef = 549947AC196A3FB400BA3D87 /* adaptive_quantization.S */; };
@@ -14,7 +17,6 @@
 		549947E2196A3FB400BA3D87 /* pixel_sad_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 549947AE196A3FB400BA3D87 /* pixel_sad_neon.S */; };
 		549947E3196A3FB400BA3D87 /* vaa_calc_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 549947AF196A3FB400BA3D87 /* vaa_calc_neon.S */; };
 		549947E4196A3FB400BA3D87 /* BackgroundDetection.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947B1196A3FB400BA3D87 /* BackgroundDetection.cpp */; };
-		549947E5196A3FB400BA3D87 /* common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947B4196A3FB400BA3D87 /* common.cpp */; };
 		549947E6196A3FB400BA3D87 /* memory.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947B6196A3FB400BA3D87 /* memory.cpp */; };
 		549947E7196A3FB400BA3D87 /* WelsFrameWork.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947BB196A3FB400BA3D87 /* WelsFrameWork.cpp */; };
 		549947E8196A3FB400BA3D87 /* WelsFrameWorkEx.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947BD196A3FB400BA3D87 /* WelsFrameWorkEx.cpp */; };
@@ -30,6 +32,8 @@
 		549947F2196A3FB400BA3D87 /* ScrollDetectionFuncs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947D5196A3FB400BA3D87 /* ScrollDetectionFuncs.cpp */; };
 		549947F3196A3FB400BA3D87 /* vaacalcfuncs.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947D8196A3FB400BA3D87 /* vaacalcfuncs.cpp */; };
 		549947F4196A3FB400BA3D87 /* vaacalculation.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 549947D9196A3FB400BA3D87 /* vaacalculation.cpp */; };
+		6C749B78197E2A2000A111F9 /* adaptive_quantization_aarch64_neon.S in Sources */ = {isa = PBXBuildFile; fileRef = 6C749B77197E2A2000A111F9 /* adaptive_quantization_aarch64_neon.S */; };
+		F791965B19D3BF6B00F60C6B /* intra_pred_common.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F791965A19D3BF6B00F60C6B /* intra_pred_common.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -45,6 +49,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		4CC6094E197E009D00BE8B8B /* down_sample_aarch64_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = down_sample_aarch64_neon.S; path = arm64/down_sample_aarch64_neon.S; sourceTree = "<group>"; };
+		4CC609591980F34F00BE8B8B /* vaa_calc_aarch64_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = vaa_calc_aarch64_neon.S; path = arm64/vaa_calc_aarch64_neon.S; sourceTree = "<group>"; };
+		4CD0FE35199082AD00375C9A /* pixel_sad_aarch64_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = pixel_sad_aarch64_neon.S; path = arm64/pixel_sad_aarch64_neon.S; sourceTree = "<group>"; };
 		5499477C196A3F3900BA3D87 /* libprocessing.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libprocessing.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		5499477F196A3F3900BA3D87 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		54994790196A3F3900BA3D87 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = Library/Frameworks/UIKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -57,7 +64,6 @@
 		549947AF196A3FB400BA3D87 /* vaa_calc_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; path = vaa_calc_neon.S; sourceTree = "<group>"; };
 		549947B1196A3FB400BA3D87 /* BackgroundDetection.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = BackgroundDetection.cpp; sourceTree = "<group>"; };
 		549947B2196A3FB400BA3D87 /* BackgroundDetection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BackgroundDetection.h; sourceTree = "<group>"; };
-		549947B4196A3FB400BA3D87 /* common.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = common.cpp; sourceTree = "<group>"; };
 		549947B5196A3FB400BA3D87 /* common.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
 		549947B6196A3FB400BA3D87 /* memory.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = memory.cpp; sourceTree = "<group>"; };
 		549947B7196A3FB400BA3D87 /* memory.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = memory.h; sourceTree = "<group>"; };
@@ -89,6 +95,8 @@
 		549947D8196A3FB400BA3D87 /* vaacalcfuncs.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vaacalcfuncs.cpp; sourceTree = "<group>"; };
 		549947D9196A3FB400BA3D87 /* vaacalculation.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = vaacalculation.cpp; sourceTree = "<group>"; };
 		549947DA196A3FB400BA3D87 /* vaacalculation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = vaacalculation.h; sourceTree = "<group>"; };
+		6C749B77197E2A2000A111F9 /* adaptive_quantization_aarch64_neon.S */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.asm; name = adaptive_quantization_aarch64_neon.S; path = arm64/adaptive_quantization_aarch64_neon.S; sourceTree = "<group>"; };
+		F791965A19D3BF6B00F60C6B /* intra_pred_common.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = intra_pred_common.cpp; path = ../../../common/src/intra_pred_common.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,6 +111,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		4CC6094D197E008B00BE8B8B /* arm64 */ = {
+			isa = PBXGroup;
+			children = (
+				4CD0FE35199082AD00375C9A /* pixel_sad_aarch64_neon.S */,
+				6C749B77197E2A2000A111F9 /* adaptive_quantization_aarch64_neon.S */,
+				4CC609591980F34F00BE8B8B /* vaa_calc_aarch64_neon.S */,
+				4CC6094E197E009D00BE8B8B /* down_sample_aarch64_neon.S */,
+			);
+			name = arm64;
+			sourceTree = "<group>";
+		};
 		54994773196A3F3900BA3D87 = {
 			isa = PBXGroup;
 			children = (
@@ -142,6 +161,7 @@
 		549947A7196A3FB400BA3D87 /* src */ = {
 			isa = PBXGroup;
 			children = (
+				4CC6094D197E008B00BE8B8B /* arm64 */,
 				549947A8196A3FB400BA3D87 /* adaptivequantization */,
 				549947AB196A3FB400BA3D87 /* arm */,
 				549947B0196A3FB400BA3D87 /* backgrounddetection */,
@@ -190,7 +210,7 @@
 		549947B3196A3FB400BA3D87 /* common */ = {
 			isa = PBXGroup;
 			children = (
-				549947B4196A3FB400BA3D87 /* common.cpp */,
+				F791965A19D3BF6B00F60C6B /* intra_pred_common.cpp */,
 				549947B5196A3FB400BA3D87 /* common.h */,
 				549947B6196A3FB400BA3D87 /* memory.cpp */,
 				549947B7196A3FB400BA3D87 /* memory.h */,
@@ -326,23 +346,27 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6C749B78197E2A2000A111F9 /* adaptive_quantization_aarch64_neon.S in Sources */,
 				549947F4196A3FB400BA3D87 /* vaacalculation.cpp in Sources */,
 				549947E9196A3FB400BA3D87 /* ComplexityAnalysis.cpp in Sources */,
 				549947E3196A3FB400BA3D87 /* vaa_calc_neon.S in Sources */,
 				549947EE196A3FB400BA3D87 /* imagerotate.cpp in Sources */,
-				549947E5196A3FB400BA3D87 /* common.cpp in Sources */,
 				549947EA196A3FB400BA3D87 /* denoise.cpp in Sources */,
 				549947E7196A3FB400BA3D87 /* WelsFrameWork.cpp in Sources */,
 				549947F1196A3FB400BA3D87 /* ScrollDetection.cpp in Sources */,
 				549947E4196A3FB400BA3D87 /* BackgroundDetection.cpp in Sources */,
 				549947F3196A3FB400BA3D87 /* vaacalcfuncs.cpp in Sources */,
+				4CD0FE36199082AD00375C9A /* pixel_sad_aarch64_neon.S in Sources */,
 				549947E0196A3FB400BA3D87 /* adaptive_quantization.S in Sources */,
 				549947EB196A3FB400BA3D87 /* denoise_filter.cpp in Sources */,
 				549947ED196A3FB400BA3D87 /* downsamplefuncs.cpp in Sources */,
 				549947E6196A3FB400BA3D87 /* memory.cpp in Sources */,
 				549947E2196A3FB400BA3D87 /* pixel_sad_neon.S in Sources */,
 				549947F0196A3FB400BA3D87 /* SceneChangeDetection.cpp in Sources */,
+				4CC6094F197E009D00BE8B8B /* down_sample_aarch64_neon.S in Sources */,
+				4CC6095A1980F34F00BE8B8B /* vaa_calc_aarch64_neon.S in Sources */,
 				549947F2196A3FB400BA3D87 /* ScrollDetectionFuncs.cpp in Sources */,
+				F791965B19D3BF6B00F60C6B /* intra_pred_common.cpp in Sources */,
 				549947EF196A3FB400BA3D87 /* imagerotatefuncs.cpp in Sources */,
 				549947DF196A3FB400BA3D87 /* AdaptiveQuantization.cpp in Sources */,
 				549947EC196A3FB400BA3D87 /* downsample.cpp in Sources */,
@@ -389,8 +413,8 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
-				ONLY_ACTIVE_ARCH = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -420,7 +444,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 7.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 6.0;
 				SDKROOT = iphoneos;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -434,7 +458,7 @@
 				GCC_PREFIX_HEADER = "";
 				"GCC_PREPROCESSOR_DEFINITIONS[sdk=iphoneos*][arch=arm64]" = (
 					APPLE_IOS,
-					HAVE_NEON_ARCH64,
+					HAVE_NEON_AARCH64,
 				);
 				"GCC_PREPROCESSOR_DEFINITIONS[sdk=iphoneos*][arch=armv7]" = (
 					APPLE_IOS,
@@ -453,11 +477,9 @@
 					"$(SRCROOT)/../../../common/arm64",
 					"$(SRCROOT)/../../../common/arm",
 				);
-				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Debug;
 		};
@@ -469,7 +491,7 @@
 				GCC_PREFIX_HEADER = "";
 				"GCC_PREPROCESSOR_DEFINITIONS[sdk=iphoneos*][arch=arm64]" = (
 					APPLE_IOS,
-					HAVE_NEON_ARCH64,
+					HAVE_NEON_AARCH64,
 				);
 				"GCC_PREPROCESSOR_DEFINITIONS[sdk=iphoneos*][arch=armv7]" = (
 					APPLE_IOS,
@@ -487,11 +509,9 @@
 					"$(SRCROOT)/../../../common/arm64",
 					"$(SRCROOT)/../../../common/arm",
 				);
-				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
-				VALID_ARCHS = "armv7 armv7s arm64";
 			};
 			name = Release;
 		};
